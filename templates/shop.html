@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}精油商城{% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top: 90px">
+<h1>🛍️ 精油商城</h1>
+
+<div class="row row-cols-1 row-cols-md-3 g-4">
+  {% for pid, p in products.items() %}
+  <div class="col">
+    <div class="card h-100">
+      <img src="https://picsum.photos/seed/{{ pid }}/400/200" class="card-img-top" alt="{{ p.name }}">
+      <div class="card-body">
+        <h5 class="card-title">{{ p.name }}</h5>
+        <p class="card-text">價格：{{ p.price }} 元</p>
+        <a href="{{ url_for('add_to_cart', pid=pid) }}" class="btn btn-primary">加入購物車</a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<a href="{{ url_for('cart') }}" class="btn btn-outline-success mt-4">查看購物車</a>
+</div>
+
+
+{% endblock %}

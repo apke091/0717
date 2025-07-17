@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}商品管理{% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top: 90px">
+<h2>📦 商品管理</h2>
+
+<!-- ✅ 新增商品表單 -->
+<div class="card p-3 mb-4" style="max-width: 600px;">
+  <h5 class="card-title mb-3">新增商品</h5>
+  <form method="POST">
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <label for="pid" class="form-label">商品 ID</label>
+        <input type="text" class="form-control" name="pid" id="pid" required>
+      </div>
+      <div class="col-md-4">
+        <label for="name" class="form-label">名稱</label>
+        <input type="text" class="form-control" name="name" id="name" required>
+      </div>
+      <div class="col-md-4">
+        <label for="price" class="form-label">價格</label>
+        <input type="number" class="form-control" name="price" id="price" required>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-success">新增商品</button>
+  </form>
+</div>
+
+<!-- ✅ 商品清單 -->
+<h5>商品列表</h5>
+<table class="table table-bordered table-striped">
+  <thead>
+    <tr>
+      <th>商品 ID</th>
+      <th>名稱</th>
+      <th>價格</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for pid, p in products.items() %}
+    <tr>
+      <td>{{ pid }}</td>
+      <td>{{ p.name }}</td>
+      <td>{{ p.price }}</td>
+      <td>
+        <form method="POST" action="{{ url_for('delete_product', pid=pid) }}" onsubmit="return confirm('確定要刪除這個商品嗎？')">
+          <button class="btn btn-sm btn-danger">刪除</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% endblock %}

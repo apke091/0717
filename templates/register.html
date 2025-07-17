@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}註冊會員{% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top: 90px">
+<h2>📝 註冊會員</h2>
+<form method="POST" style="max-width: 400px;">
+    <div class="mb-3">
+        <label for="username" class="form-label">帳號</label>
+        <input type="text" class="form-control" id="username" name="username" required>
+    </div>
+    <div class="mb-3">
+        <label for="password" class="form-label">密碼</label>
+        <input type="password" class="form-control" id="password" name="password" required>
+        <div class="form-text">需包含英文與數字，6–15 字</div>
+    </div>
+    <div class="mb-3">
+        <label for="confirm" class="form-label">確認密碼</label>
+        <input type="password" class="form-control" id="confirm" name="confirm" required>
+    </div>
+    <button type="submit" class="btn btn-primary">註冊</button>
+</form>
+</div>
+
+{% endblock %}

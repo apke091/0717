@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}聯絡我們{% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top: 90px">
+<h1>聯絡我們</h1>
+<form>
+    <div class="mb-3">
+        <label class="form-label">姓名</label>
+        <input type="text" class="form-control" placeholder="請輸入您的姓名">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">電子信箱</label>
+        <input type="email" class="form-control" placeholder="請輸入您的信箱">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">留言內容</label>
+        <textarea class="form-control" rows="5" placeholder="請輸入您的問題或建議"></textarea>
+    </div>
+    <button type="submit" class="btn btn-success">送出</button>
+</form>
+</div>
+
+{% endblock %}

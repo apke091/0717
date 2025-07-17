@@ -1,0 +1,50 @@
+<!-- templates/navbar.html -->
+<nav class="navbar navbar-light bg-light px-3 fixed-top shadow-sm">
+    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sideMenu">
+        ☰
+    </button>
+    <a class="navbar-brand ms-2 text-decoration-none text-dark" href="/">大台南芳薰香植物精油服務人員職業工會</a>
+
+
+    <div class="ms-auto d-flex align-items-center gap-2">
+    {% if session.get("username") %}
+  <a href="{{ url_for('cart') }}" class="btn btn-outline-secondary btn-sm">
+    🛒 購物車{% if cart_count > 0 %} ({{ cart_count }}){% endif %}
+  </a>
+    {% endif %}
+
+
+    {% if session.get("username") %}
+        <span class="me-2 text-secondary">👋 Dear.{{ session.username }}</span>
+        <a href="/change_password" class="btn btn-outline-secondary btn-sm">改密碼</a>
+        {% if session.role == "admin" %}
+            <a href="/upload" class="btn btn-outline-primary btn-sm">上傳影片</a>
+            <a href="/manage_products" class="btn btn-outline-primary btn-sm">商品管理</a>
+        {% endif %}
+        <a href="/logout" class="btn btn-outline-danger btn-sm">登出</a>
+    {% else %}
+        <a href="/login" class="btn btn-outline-success btn-sm">登入</a>
+        <a href="/register" class="btn btn-outline-primary btn-sm">註冊</a>
+    {% endif %}
+</div>
+
+</nav>
+
+<div class="offcanvas offcanvas-start" tabindex="-1" id="sideMenu">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">MENU</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <ul class="nav flex-column">
+            <li class="nav-item"><a class="nav-link" href="/">首頁</a></li>
+            <li class="nav-item"><a class="nav-link" href="/about">關於本會</a></li>
+            <li class="nav-item"><a class="nav-link" href="/news">最新資訊</a></li>
+            <li class="nav-item"><a class="nav-link" href="/download">下載專區</a></li>
+            <li class="nav-item"><a class="nav-link" href="/rent">教室租借</a></li>
+            <li class="nav-item"><a class="nav-link" href="/contact">聯絡我們</a></li>
+            <li class="nav-item"><a class="nav-link" href="/shop">精油商城</a></li>
+            <li class="nav-item"><a class="nav-link" href="/video">影音專區</a></li>
+        </ul>
+    </div>
+</div>

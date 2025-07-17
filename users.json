@@ -1,0 +1,22 @@
+{
+  "123": {
+    "password": "456",
+    "role": "admin"
+  },
+  "user": {
+    "password": "user456",
+    "role": "member"
+  },
+  "test": {
+    "password": "test123",
+    "role": "member"
+  },
+  "978": {
+    "password": "kma547",
+    "role": "member"
+  },
+  "NSQ0662": {
+    "password": "NSQ0662",
+    "role": "member"
+  }
+}
