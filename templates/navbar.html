@@ -20,6 +20,7 @@
         {% if session.role == "admin" %}
             <a href="/upload" class="btn btn-outline-primary btn-sm">上傳影片</a>
             <a href="/manage_products" class="btn btn-outline-primary btn-sm">商品管理</a>
+            <a href="/manage_users" class="btn btn-outline-primary btn-sm">帳號管理</a>
         {% endif %}
         <a href="/logout" class="btn btn-outline-danger btn-sm">登出</a>
     {% else %}
@@ -48,3 +49,7 @@
         </ul>
     </div>
 </div>
+{% if session.get("role") == "admin" %}
+  <a href="{{ url_for('manage_users') }}">帳號管理</a>
+{% endif %}
+
