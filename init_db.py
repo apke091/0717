@@ -33,6 +33,18 @@ def init_db():
     );
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS cart_items (
+            id SERIAL PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            product_id TEXT NOT NULL,
+            quantity INTEGER NOT NULL,
+            UNIQUE (user_id, product_id),
+            FOREIGN KEY (user_id) REFERENCES users(username),
+            FOREIGN KEY (product_id) REFERENCES products(pid)
+        );
+        """)
+
     conn.commit()
     conn.close()
     print("✅ 資料表已建立")

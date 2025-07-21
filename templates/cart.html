@@ -24,8 +24,8 @@
       <td>{{ item.qty }}</td>
       <td>{{ item.subtotal }} 元</td>
       <td>
-        <a href="{{ url_for('remove_from_cart', pid=item.id) }}" class="btn btn-sm btn-danger">移除</a>
-      </td>
+        <a href="{{ url_for('remove_from_cart', pid=item.pid) }}" class="btn btn-sm btn-danger">移除</a>
+    </td>
     </tr>
     {% endfor %}
   </tbody>
@@ -35,7 +35,11 @@
   <h5>🧾 總金額：<strong>{{ total }} 元</strong></h5>
   <a href="{{ url_for('shop') }}" class="btn btn-outline-primary mt-2">🔙 繼續購物</a>
   <a href="#" class="btn btn-success mt-2 disabled">💳 結帳（尚未開放）</a>
+  <form method="POST" action="{{ url_for('clear_cart') }}"class="d-inline" onsubmit="return confirm('確定要清空購物車嗎？')">
+    <button type="submit" class="btn btn-danger">清空購物車</button>
+</form>
 </div>
+
 
 {% else %}
 <div class="alert alert-info mt-4">

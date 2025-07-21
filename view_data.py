@@ -19,4 +19,10 @@ print("\n🛍️ Products:")
 for p in products:
     print(p)
 
+cur.execute("SELECT * FROM cart_items")
+cart_items = cur.fetchall()
+print("\n🧺 Cart Items:")
+for item in cart_items:
+    print(item)
+
 conn.close()

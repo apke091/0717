@@ -78,48 +78,94 @@ def shop():
 
 @app.route("/add_to_cart/<pid>")
 def add_to_cart(pid):
+    if "username" not in session:
+        flash("請先登入才能加入購物車")
+        return redirect(url_for("login"))
+
+    user_id = session["username"]  # 登入帳號當作 user_id
     products = load_products_from_db()
+
     if pid not in products:
         flash("商品不存在")
         return redirect(url_for("shop"))
-    cart = session.get("cart") or {}
-    cart[pid] = cart.get(pid, 0) + 1
-    session["cart"] = cart
-    flash("已加入購物車")
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # 嘗試插入商品，如果已存在就加一筆數量
+        cursor.execute("""
+            INSERT INTO cart_items (user_id, product_id, quantity)
+            VALUES (%s, %s, 1)
+            ON CONFLICT (user_id, product_id)
+            DO UPDATE SET quantity = cart_items.quantity + 1
+        """, (user_id, pid))
+
+        conn.commit()
+        flash("✅ 已加入購物車")
+
+    except Exception as e:
+        print("加入購物車錯誤：", e)
+        flash("❌ 加入購物車失敗，請稍後再試")
+
+    finally:
+        conn.close()
+
     return redirect(url_for("shop"))
 
 @app.route("/cart")
 def cart():
-    if not session.get("username"):
+    if "username" not in session:
         flash("請先登入才能查看購物車")
         return redirect(url_for("login"))
-    products = load_products_from_db()
-    cart = session.get("cart") or {}
-    items = []
-    total = 0
-    for pid, qty in cart.items():
-        product = products.get(pid)
-        if product:
-            price = int(product["price"])
-            subtotal = price * qty
-            items.append({
-                "id": pid,
-                "name": product["name"],
-                "price": price,
-                "qty": qty,
-                "subtotal": subtotal
-            })
-            total += subtotal
+
+    user_id = session["username"]
+
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    # 查詢使用者的購物車，連結產品名稱與價格
+    cursor.execute("""
+        SELECT 
+            p.pid,
+            p.name,
+            p.price,
+            c.quantity,
+            (p.price * c.quantity) AS subtotal
+        FROM cart_items c
+        JOIN products p ON c.product_id = p.pid
+        WHERE c.user_id = %s
+    """, (user_id,))
+
+    items = cursor.fetchall()
+    total = sum(item["subtotal"] for item in items)
+
+    conn.close()
+
     return render_template("cart.html", items=items, total=total)
 
 @app.route("/remove_from_cart/<pid>")
 def remove_from_cart(pid):
-    cart = session.get("cart") or {}
-    if pid in cart:
-        del cart[pid]
-        session["cart"] = cart
-        flash("已從購物車移除")
+    if "username" not in session:
+        flash("請先登入")
+        return redirect(url_for("login"))
+
+    user_id = session["username"]
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM cart_items WHERE user_id = %s AND product_id = %s", (user_id, pid))
+        conn.commit()
+        flash("🗑️ 已從購物車移除")
+    except Exception as e:
+        print("刪除購物車項目錯誤：", e)
+        flash("❌ 無法移除，請稍後再試")
+    finally:
+        conn.close()
+
     return redirect(url_for("cart"))
+
 
 @app.route("/manage_products", methods=["GET", "POST"])
 @admin_required
@@ -147,21 +193,45 @@ def manage_products():
     conn.close()
     return render_template("manage_products.html", products=products)
 
+
 @app.route("/delete_product/<pid>", methods=["POST"])
 @admin_required
 def delete_product(pid):
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    # 先刪掉購物車裡的相關項目（可選）
+    cursor.execute("DELETE FROM cart_items WHERE product_id = %s", (pid,))
+
+    # 再刪除商品
     cursor.execute("DELETE FROM products WHERE pid = %s", (pid,))
+
     conn.commit()
     conn.close()
-    flash("🗑️ 商品已刪除")
+    flash("🗑️ 商品與相關購物車項目已刪除")
     return redirect(url_for("manage_products"))
 
-@app.context_processor
-def inject_cart_count():
-    cart = session.get("cart") or {}
-    return dict(cart_count=sum(cart.values()))
+@app.route("/clear_cart", methods=["POST"])
+def clear_cart():
+    if "username" not in session:
+        flash("請先登入")
+        return redirect(url_for("login"))
+
+    user_id = session["username"]
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM cart_items WHERE user_id = %s", (user_id,))
+        conn.commit()
+        flash("🧹 已清空購物車")
+    except Exception as e:
+        print("清空購物車錯誤：", e)
+        flash("❌ 清空失敗，請稍後再試")
+    finally:
+        conn.close()
+
+    return redirect(url_for("cart"))
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -310,6 +380,26 @@ def video_gallery():
     os.makedirs(folder, exist_ok=True)
     videos = [f for f in os.listdir(folder) if f.endswith(".mp4")]
     return render_template("video.html", videos=videos)
+
+@app.context_processor
+def inject_cart_count():
+    cart_count = 0
+    if "username" in session:
+        user_id = session["username"]
+        conn = None
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT SUM(quantity) FROM cart_items WHERE user_id = %s", (user_id,))
+            result = cursor.fetchone()
+            cart_count = result[0] or 0
+        except Exception as e:
+            print("取得購物車數量錯誤：", e)
+        finally:
+            if conn:
+                conn.close()
+    return dict(cart_count=cart_count)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
