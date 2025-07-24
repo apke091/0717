@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}編輯關於我們{% endblock %}
+{% block content %}
+<div class="container" style="margin-top: 90px">
+  <h2>編輯「關於我們」</h2>
+  <form method="POST">
+    <textarea name="content" rows="20" class="form-control">{{ content }}</textarea>
+    <button type="submit" class="btn btn-success mt-3">💾 儲存</button>
+    <a href="{{ url_for('about') }}" class="btn btn-secondary mt-3">取消</a>
+  </form>
+</div>
+{% endblock %}

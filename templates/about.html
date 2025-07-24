@@ -1,39 +1,10 @@
 {% extends "base.html" %}
 {% block title %}關於我們{% endblock %}
-
 {% block content %}
 <div class="container" style="margin-top: 90px">
-<h1>關於精油工會</h1>
-    <p>我們致力於推廣芳香療法、精油教育與應用，連結產業與社會，創造健康永續生活。</p>
-    <ul>【工會簡介】
-        <li>成立日期：98年08月21日</li>
-        <li>成立緣由：</li>
-        <li>1.因應美容美體市場成長，技術人員需求量大增，為提供企業主所需人才，做專業技能培訓。</li>
-        <li>2.引進國外專業芳療認證體系訓練課程，強化專業人員技能培訓，輔導考照，加強個人市場化競爭力。</li>
-        <li>3.提供市場就業機會，媒合就業及輔導創業。</li>
-        <li>4.本會同步接收來自世界各國體系產業發展現況，強化會員個人國際觀。</li>
-    </ul>
-    <ul>
-        <li>【經營理念】</li>
-        <li>※核心價值:</li>
-        <li>1.團隊合作</li>
-        <li>2.誠信熱忱</li>
-        <li>3.終身學習</li>
-        <li>※使命:</li>
-        <li>1.培養所需芳療美容專業知識與技能，促進就業，以成為專業從業人員</li>
-        <li>2.爭取會員／學員的工作權益，並提升生活品質</li>
-        <li>3.提供美容企業主專業人才培訓</li>
-        <li>※願景:</li>
-        <li>1.成為芳療教育訓練體系的標竿單位</li>
-    </ul>
-    <ul>
-        <li>【訓練承諾】</li>
-        <li>我們將秉持TTQS精神，提供符合市場所需課程，並依職能分析進行設計，且提供優質師資與相符設施設備，並確保達成說寫作一致及持續改善之目標，並執行以下承諾，以確保學員權益：</li>
-        <li>1.充分揭露年度訓練計畫與課程相關資訊。</li>
-        <li>2.詳細說明與執行課程結訓資格條件與補助條件。</li>
-        <li>3.說明並執行相關優惠措施及退費機制。</li>
-    </ul>
+    {{ content | safe }}
+    {% if session.get("role") == "admin" %}
+        <a href="{{ url_for('edit_about') }}" class="btn btn-primary mt-3">✏️ 編輯內容</a>
+    {% endif %}
 </div>
-
-<img src="https://scontent.fkhh1-2.fna.fbcdn.net/v/t39.30808-6/305628769_467463335396913_4960549714370933475_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=GPFuBLjyfSoQ7kNvwE3wawg&_nc_oc=AdmBG_ySIGtjOVGmxVBLFxH-zGeIQxsRiC-NIsIBR-zo826_BCVIHiiLJUEyToE5Raw&_nc_zt=23&_nc_ht=scontent.fkhh1-2.fna&_nc_gid=FsXWo2VF8IXT-SVCxRN3Rw&oh=00_AfRfskm0Lv_1LdGaGOo4oCPD0EO63CisWhMRhEQ6ArEUHg&oe=687572FD" class="img-fluid rounded shadow" alt="banner">
 {% endblock %}

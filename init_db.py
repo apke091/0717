@@ -44,6 +44,24 @@ def init_db():
             FOREIGN KEY (product_id) REFERENCES products(pid)
         );
         """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS about_page (
+            id SERIAL PRIMARY KEY,
+            content TEXT NOT NULL
+        );
+    """)
+
+    # 確保至少有一筆初始資料
+    cursor.execute("SELECT COUNT(*) FROM about_page;")
+    count = cursor.fetchone()["count"]
+    if count == 0:
+        cursor.execute("INSERT INTO about_page (content) VALUES (%s)", (
+            '''
+            <h1>關於精油工會</h1>
+            <p>我們致力於推廣芳香療法、精油教育與應用，連結產業與社會，創造健康永續生活。</p>
+            <ul><li>初始資料...</li></ul>
+            ''',
+        ))
 
     conn.commit()
     conn.close()

@@ -7,6 +7,8 @@ from functools import wraps
 from dotenv import load_dotenv
 load_dotenv()
 
+# app = Flask(__name__)
+# app.jinja_env.cache = {}  # ✅ 關閉模板快取（開發用）
 
 # 建立 PostgreSQL 資料庫連線
 
@@ -47,13 +49,44 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# @app.route("/test")
+# def test():
+#     return render_template("test.html", cart_count=999, username="測試")
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
 
 @app.route("/about")
 def about():
-    return render_template("about.html")
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT content FROM about_page WHERE id = 1")
+    result = cur.fetchone()
+    conn.close()
+    return render_template("about.html", content=result["content"])
+
+
+
+@app.route("/edit_about", methods=["GET", "POST"])
+@admin_required
+def edit_about():
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    if request.method == "POST":
+        new_content = request.form["content"]
+        cur.execute("UPDATE about_page SET content = %s WHERE id = 1", (new_content,))
+        conn.commit()
+        conn.close()
+        flash("更新成功！")
+        return redirect(url_for("about"))
+
+    cur.execute("SELECT content FROM about_page WHERE id = 1")
+    content = cur.fetchone()["content"]
+    conn.close()
+    return render_template("edit_about.html", content=content)
 
 @app.route("/contact")
 def contact():
@@ -166,6 +199,31 @@ def remove_from_cart(pid):
 
     return redirect(url_for("cart"))
 
+@app.context_processor
+def inject_cart_count():
+    if "username" not in session:
+        print("❌ 沒登入，不查詢購物車")
+        return {"cart_count": 0}
+
+    try:
+        user_id = session["username"]
+        print("✅ 正在查詢購物車數量，user_id =", user_id)
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT SUM(quantity) AS sum FROM cart_items WHERE user_id = %s", (user_id,))
+        result = cursor.fetchone()
+        conn.close()
+
+        print("🎯 查詢結果：", result)
+
+        count = result.get("sum", 0) if result else 0
+    except Exception as e:
+        print("⚠️ 購物車查詢錯誤：", e)
+        count = 0
+
+    print("✅ 最終 cart_count =", count)
+    return {"cart_count": count}
 
 @app.route("/manage_products", methods=["GET", "POST"])
 @admin_required

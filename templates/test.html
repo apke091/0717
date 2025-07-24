@@ -1,16 +1,9 @@
-<!--<!DOCTYPE html>-->
-<!--<html>-->
-<!--<head>-->
-<!--  <meta charset="UTF-8">-->
-<!--  <style>-->
-<!--    body {-->
-<!--      background-color: #f5f0fa;-->
-<!--      font-family: sans-serif;-->
-<!--    }-->
-<!--  </style>-->
-<!--</head>-->
-<!--<body>-->
-<!--  <h1>測試背景</h1>-->
-<!--  <p>應該要是淡紫色背景</p>-->
-<!--</body>-->
-<!--</html>-->
+{% extends "base.html" %}
+{% block title %}測試購物車{% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top: 100px;">
+  <h2>🧪 測試頁面</h2>
+  <p>這頁會強制塞 cart_count=999、username=測試</p>
+</div>
+{% endblock %}

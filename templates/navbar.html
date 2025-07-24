@@ -8,21 +8,18 @@
 
     <div class="ms-auto d-flex align-items-center gap-2">
     {% if session.get("username") %}
- <a href="{{ url_for('cart') }}" class="btn btn-outline-secondary position-relative">
-  🛒 購物車
-  {% if cart_count > 0 %}
-    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-          style="font-size: 0.75rem; padding: 4px 6px; z-index: 10;">
-      {{ cart_count }}
-    </span>
-  {% endif %}
+<a href="{{ url_for('cart') }}" class="btn btn-outline-secondary">
+  🛒 購物車（{{ cart_count }}）
 </a>
+
+
+
 
     {% endif %}
 
 
     {% if session.get("username") %}
-        <span class="me-2 text-secondary">👋 Dear.{{ session.username }}</span>
+        <span class="me-2 text-secondary">👋Dear. {{ session.username }}</span>
         <a href="/change_password" class="btn btn-outline-secondary btn-sm">改密碼</a>
         {% if session.role == "admin" %}
             <a href="/upload" class="btn btn-outline-primary btn-sm">上傳影片</a>
