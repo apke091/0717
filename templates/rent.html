@@ -3,22 +3,71 @@
 
 {% block content %}
 <div class="container" style="margin-top: 90px">
-<h1>教室租借資訊</h1>
-<p>本會提供場地租借服務，適合小型課程與講座使用。</p>
-<ul>
-    <li>【府前教室】</li>
-    <li>台南市中西區府前路一88號9樓</li>
-    <li>06-2228504</li>
-    <li>租借費用：$500/小時</li>
-</ul>
-<ul>
-    <li>【西門教室】</li>
-    <li>台南市北區西門路三段159號9樓5</li>
-    <li>06-2226607</li>
-    <li>租借費用：$500/小時</li>
-</ul>
+  <h1>教室租借資訊</h1>
+  <p>本會提供場地租借服務，適合小型課程與講座使用。</p>
+  <ul>
+      <li>【府前教室】</li>
+      <li>台南市中西區府前路一88號9樓</li>
+      <li>06-2228504</li>
+      <li>租借費用：$500/小時</li>
+  </ul>
+  <ul>
+      <li>【西門教室】</li>
+      <li>台南市北區西門路三段159號9樓5</li>
+      <li>06-2226607</li>
+      <li>租借費用：$500/小時</li>
+  </ul>
+  <p>請聯絡本會辦公室預約。</p>
 
-<p>請聯絡本會辦公室預約。</p>
+  <hr>
+  <h2>線上申請租借</h2>
+  <form method="POST">
+    <div class="mb-3">
+      <label class="form-label">選擇場地</label>
+      <select class="form-select" name="location" required>
+        <option value="">請選擇</option>
+        <option value="府前教室">府前教室</option>
+        <option value="西門教室">西門教室</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">租借日期</label>
+      <input type="date" class="form-control" name="date" min="{{ now.strftime('%Y-%m-%d') }}" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">租借時段</label>
+      <select class="form-select" name="time_slot" required>
+        <option value="">請選擇</option>
+        <option value="09:00–12:00">09:00–12:00</option>
+        <option value="13:00-16:00">13:00–16:00</option>
+        <option value="18:00–21:00">18:00–21:00</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">聯絡人姓名</label>
+      <input type="text" class="form-control" name="name" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">聯絡電話（手機）</label>
+      <input type="text" class="form-control" name="phone" pattern="09\d{8}" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">電子郵件</label>
+      <input type="email" class="form-control" name="email" required>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">備註</label>
+      <textarea class="form-control" name="note" rows="3"></textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">送出申請</button>
+  </form>
 </div>
-
 {% endblock %}
+

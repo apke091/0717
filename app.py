@@ -5,6 +5,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from functools import wraps
 from dotenv import load_dotenv
+from datetime import datetime
 load_dotenv()
 
 # app = Flask(__name__)
@@ -48,6 +49,26 @@ def admin_required(f):
             return redirect(url_for("login"))
         return f(*args, **kwargs)
     return decorated_function
+
+def delete_expired_rent_requests():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    now = datetime.now()
+
+    cur.execute("""
+        DELETE FROM rent_requests
+        WHERE status = 'approved'
+        AND (
+            (date < %s)
+            OR (date = %s AND (
+                (time_slot = '09:00–12:00' AND %s >= '12:00')
+                OR (time_slot = '13:00-16:00' AND %s >= '16:00')
+                OR (time_slot = '18:00–21:00' AND %s >= '21:00')
+            ))
+        )
+    """, (now.date(), now.date(), now.strftime('%H:%M'), now.strftime('%H:%M'), now.strftime('%H:%M')))
+    conn.commit()
+    conn.close()
 
 # @app.route("/test")
 # def test():
@@ -100,9 +121,73 @@ def download():
 def news():
     return render_template("news.html")
 
-@app.route("/rent")
+@app.route("/rent", methods=["GET", "POST"])
 def rent():
-    return render_template("rent.html")
+    if request.method == "POST":
+        location = request.form.get("location")
+        date = request.form.get("date")
+        time_slot = request.form.get("time_slot")
+        name = request.form.get("name")
+        phone = request.form.get("phone")
+        email = request.form.get("email")
+        note = request.form.get("note") or ""
+
+        # 防止選過去日期
+        today = datetime.now().date()
+        selected_date = datetime.strptime(date, "%Y-%m-%d").date()
+        if selected_date < today:
+            flash("❌ 不能選擇今天以前的日期")
+            return redirect(url_for("rent"))
+
+        # 檢查是否已有相同場地+日期+時段 且已核准的紀錄
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT * FROM rent_requests WHERE location=%s AND date=%s AND time_slot=%s AND status='approved'",
+            (location, date, time_slot)
+        )
+        existing = cur.fetchone()
+        if existing:
+            conn.close()
+            flash("❌ 此時段已被預約")
+            return redirect(url_for("rent"))
+
+        # 寫入資料庫（包含 email 欄位）
+        cur.execute(
+            "INSERT INTO rent_requests (location, date, time_slot, name, phone, email, note, status, submitted_at) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())",
+            (location, date, time_slot, name, phone, email, note, 'pending')
+        )
+        conn.commit()
+        conn.close()
+
+        flash("✅ 已送出申請，請等待審核")
+        return redirect(url_for("rent"))
+
+    # 傳入今天的日期限制 HTML 選項
+    return render_template("rent.html", now=datetime.now())
+
+@app.route("/manage_rents", methods=["GET", "POST"])
+@admin_required
+def manage_rents():
+    delete_expired_rent_requests()  # 一進來就清除過期資料
+
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    if request.method == "POST":
+        rent_id = request.form["id"]
+        action = request.form["action"]
+        if action == "approve":
+            cur.execute("UPDATE rent_requests SET status='approved' WHERE id=%s", (rent_id,))
+        elif action == "reject":
+            cur.execute("DELETE FROM rent_requests WHERE id=%s", (rent_id,))
+        conn.commit()
+
+    cur.execute("SELECT * FROM rent_requests ORDER BY submitted_at DESC")
+    rents = cur.fetchall()
+    conn.close()
+    return render_template("manage_rents.html", rents=rents)
 
 @app.route("/shop")
 def shop():
@@ -215,7 +300,7 @@ def inject_cart_count():
         result = cursor.fetchone()
         conn.close()
 
-        print("🎯 查詢結果：", result)
+        # print("🎯 查詢結果：", result)
 
         count = result.get("sum", 0) if result else 0
     except Exception as e:

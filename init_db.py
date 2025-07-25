@@ -34,6 +34,36 @@ def init_db():
     """)
 
     cursor.execute("""
+            CREATE TABLE IF NOT EXISTS rent_requests (
+                id SERIAL PRIMARY KEY,
+                location TEXT NOT NULL,
+                date DATE NOT NULL,
+                time_slot TEXT NOT NULL,
+                name TEXT NOT NULL,
+                phone TEXT NOT NULL,
+                email TEXT,
+                note TEXT,
+                submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                status TEXT DEFAULT 'pending'
+            );
+        """)
+
+    # 確保 email 欄位存在（避免 insert 出錯）
+    cursor.execute("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name='rent_requests' AND column_name='email'
+                ) THEN
+                    ALTER TABLE rent_requests ADD COLUMN email TEXT;
+                END IF;
+            END
+            $$;
+        """)
+    # cursor.execute("ALTER TABLE rent_requests ADD COLUMN status TEXT DEFAULT 'pending';")
+
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS cart_items (
             id SERIAL PRIMARY KEY,
             user_id TEXT NOT NULL,
@@ -62,6 +92,8 @@ def init_db():
             <ul><li>初始資料...</li></ul>
             ''',
         ))
+
+
 
     conn.commit()
     conn.close()
