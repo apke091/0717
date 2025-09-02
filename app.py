@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask_mail import Mail, Message
 import os
 import re
 import psycopg2
@@ -6,9 +7,22 @@ from psycopg2.extras import RealDictCursor
 from functools import wraps
 from dotenv import load_dotenv
 from datetime import datetime
+import random
 load_dotenv()
 
-# app = Flask(__name__)
+
+app = Flask(__name__)
+
+# 設定 mail
+app.config['MAIL_SERVER'] = os.environ.get("MAIL_SERVER")
+app.config['MAIL_PORT'] = int(os.environ.get("MAIL_PORT", 587))
+app.config['MAIL_USE_TLS'] = os.environ.get("MAIL_USE_TLS") == "True"
+app.config['MAIL_USERNAME'] = os.environ.get("MAIL_USERNAME")
+app.config['MAIL_PASSWORD'] = os.environ.get("MAIL_PASSWORD")
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get("MAIL_DEFAULT_SENDER")
+
+mail = Mail(app)
+
 # app.jinja_env.cache = {}  # ✅ 關閉模板快取（開發用）
 
 # 建立 PostgreSQL 資料庫連線
@@ -36,7 +50,7 @@ def load_products_from_db():
         }
     return products
 
-app = Flask(__name__)
+# app = Flask(__name__)
 app.secret_key = 'your-secret-key'
 
 # 管理員權限驗證
@@ -109,13 +123,93 @@ def edit_about():
     conn.close()
     return render_template("edit_about.html", content=content)
 
-@app.route("/contact")
+@app.route("/contact", methods=["GET", "POST"])
 def contact():
-    return render_template("contact.html")
+    if request.method == "POST":
+        name = request.form.get("name")
+        email = request.form.get("email")
+        message = request.form.get("message")
+        answer = request.form.get("captcha_answer")
+
+        if not name or not email or not message or not answer:
+            flash("❌ 所有欄位都必填")
+            return redirect(url_for("contact"))
+
+        # 驗證驗證碼
+        if str(session.get("captcha_answer")) != str(answer).strip():
+            flash("⚠️ 驗證碼錯誤，請再試一次")
+            return redirect(url_for("contact"))
+
+        # 寫進 contact_messages 資料表
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO contact_messages (name, email, message) VALUES (%s, %s, %s)",
+                (name, email, message)
+            )
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            flash("⚠️ 儲存留言失敗：" + str(e))
+            return redirect(url_for("contact"))
+
+        # 寄 email
+        msg = Message("🔔 聯絡表單留言",
+                      recipients=[os.environ.get("MAIL_RECEIVER")])
+        msg.body = f"""
+📩 姓名：{name}
+📧 Email：{email}
+📝 留言內容：
+{message}
+        """
+        try:
+            mail.send(msg)
+            flash("✅ 留言已送出，我們會盡快回覆您！")
+        except Exception as e:
+            flash("⚠️ 寄送 email 失敗：" + str(e))
+
+        return redirect(url_for("contact"))
+
+    # GET 請求：產生驗證碼題目
+    a, b = random.randint(1, 9), random.randint(1, 9)
+    session["captcha_answer"] = a + b
+    return render_template("contact.html", captcha_question=f"{a} + {b} = ?")
 
 @app.route("/download")
-def download():
-    return render_template("download.html")
+def downloads():
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT * FROM downloads ORDER BY uploaded_at DESC")
+    file_list = cur.fetchall()
+    conn.close()
+    return render_template("download.html", file_list=file_list)
+
+@app.route("/upload_file", methods=["GET", "POST"])
+@admin_required
+def upload_file():
+    if request.method == "POST":
+        file = request.files.get("file")
+        title = request.form.get("title")
+
+        if not file or not file.filename or not title:
+            flash("❌ 檔案與標題都必填")
+            return redirect(url_for("upload_file"))
+
+        save_path = os.path.join("static", "files", file.filename)
+        file.save(save_path)
+
+        # 寫入資料表
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO downloads (filename, title) VALUES (%s, %s)", (file.filename, title))
+        conn.commit()
+        conn.close()
+
+        flash("✅ 上傳成功")
+        return redirect(url_for("upload_file"))
+
+    return render_template("upload_file.html")
 
 @app.route("/news")
 def news():

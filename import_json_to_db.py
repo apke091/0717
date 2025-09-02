@@ -30,3 +30,33 @@
 # conn.commit()
 # conn.close()
 # print("✅ 匯入 products.json 完成")
+# make_admin.py
+
+
+
+
+
+
+
+# #帳號升級admin
+# import os
+# import psycopg2
+# from psycopg2.extras import RealDictCursor
+# from dotenv import load_dotenv
+#
+# load_dotenv()  # 讀 .env 的 DATABASE_URL
+# username = input("輸入要升級為管理員的帳號： ").strip()
+#
+# dsn = os.environ["DATABASE_URL"]
+# conn = psycopg2.connect(dsn, cursor_factory=RealDictCursor)
+# cur = conn.cursor()
+#
+# cur.execute("UPDATE users SET role = 'admin' WHERE username = %s", (username,))
+# if cur.rowcount == 0:
+#     print("找不到這個帳號。")
+# else:
+#     conn.commit()
+#     print(f"✅ {username} 已是 admin")
+#
+# conn.close()
+#

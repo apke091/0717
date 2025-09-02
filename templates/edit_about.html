@@ -2,20 +2,20 @@
 {% block title %}編輯關於我們{% endblock %}
 
 {% block content %}
-<!-- Quill 的 CSS & JS（免註冊，免 API Key） -->
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+<!-- 圖片可拖曳調整大小 -->
+<script src="https://unpkg.com/quill-image-resize-module@3.0.0/image-resize.min.js"></script>
 
 <div class="container" style="margin-top: 90px">
   <h2>編輯「關於我們」</h2>
 
   <form method="POST" onsubmit="return prepareForm();">
-    <!-- 📝 Quill 編輯器區塊，初始內容用 |safe 放進去 -->
-    <div id="quill-editor" style="height: 500px; background: white; border: 1px solid #ccc;">
+    <!-- 編輯器 -->
+    <div id="quill-editor" style="height: 500px; background:#fff; border:1px solid #ccc;">
       {{ content | safe }}
     </div>
 
-    <!-- 🔒 隱藏欄位，送出 HTML 到 Flask -->
     <input type="hidden" name="content" id="hidden-content">
 
     <button type="submit" class="btn btn-success mt-3">💾 儲存</button>
@@ -23,25 +23,33 @@
   </form>
 </div>
 
-<!-- 初始化 Quill -->
+<style>
+  /* 圖片自適應、等比縮放與置中 */
+  #quill-editor img { max-width: 100%; height: auto; }
+  .ql-editor .ql-align-center img { display:block; margin:0 auto; }
+</style>
+
 <script>
-  var quill = new Quill('#quill-editor', {
+  Quill.register('modules/imageResize', ImageResize);
+
+  const quill = new Quill('#quill-editor', {
     theme: 'snow',
     placeholder: '請輸入內容...',
     modules: {
       toolbar: [
-    [{ header: [1, 2, 3, false] }],
-    ['bold', 'italic', 'underline'],
-    ['link', 'image', 'blockquote'],
-    [{ list: 'ordered' }, { list: 'bullet' }],
-    ['clean']
-    ]
+        [{ header: [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline'],
+        [{ 'align': [] }],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['link', 'image', 'blockquote'],
+        ['clean']
+      ],
+      imageResize: { modules: [ 'Resize', 'DisplaySize' ] }
     }
   });
 
   function prepareForm() {
-    var html = quill.root.innerHTML;
-    document.getElementById("hidden-content").value = html;
+    document.getElementById('hidden-content').value = quill.root.innerHTML;
     return true;
   }
 </script>

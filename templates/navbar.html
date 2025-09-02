@@ -1,60 +1,170 @@
+<!--&lt;!&ndash; templates/navbar.html &ndash;&gt;-->
+<!--<nav class="navbar navbar-light bg-light px-3 fixed-top shadow-sm">-->
+<!--    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sideMenu">-->
+<!--        ☰-->
+<!--    </button>-->
+<!--    <a class="navbar-brand ms-2 text-decoration-none text-dark" href="/">大台南芳薰香植物精油服務人員職業工會</a>-->
+
+
+<!--    <div class="ms-auto d-flex align-items-center gap-2">-->
+<!--    {% if session.get("username") %}-->
+<!--<a href="{{ url_for('cart') }}" class="btn btn-outline-secondary">-->
+<!--  🛒 購物車（{{ cart_count }}）-->
+<!--</a>-->
+
+
+
+
+<!--    {% endif %}-->
+
+
+<!--    {% if session.get("username") %}-->
+<!--        <span class="me-2 text-secondary">👋Dear. {{ session.username }}</span>-->
+<!--        <a href="/change_password" class="btn btn-outline-secondary btn-sm">改密碼</a>-->
+<!--        {% if session.role == "admin" %}-->
+<!--            <a href="/upload" class="btn btn-outline-primary btn-sm">上傳影片</a>-->
+<!--            <a href="/manage_products" class="btn btn-outline-primary btn-sm">商品管理</a>-->
+<!--            <a href="/manage_users" class="btn btn-outline-primary btn-sm">帳號管理</a>-->
+<!--            <a href="/manage_rents" class="btn btn-outline-primary btn-sm">確認租借資訊</a>-->
+<!--            <a href="/upload_file" class="btn btn-outline-primary btn-sm">上傳檔案</a>-->
+<!--        {% endif %}-->
+<!--        <a href="/logout" class="btn btn-outline-danger btn-sm">登出</a>-->
+<!--    {% else %}-->
+<!--        <a href="/login" class="btn btn-outline-success btn-sm">登入</a>-->
+<!--        <a href="/register" class="btn btn-outline-primary btn-sm">註冊</a>-->
+<!--    {% endif %}-->
+<!--</div>-->
+
+<!--</nav>-->
+
+<!--<div class="offcanvas offcanvas-start" tabindex="-1" id="sideMenu">-->
+<!--    <div class="offcanvas-header">-->
+<!--        <h5 class="offcanvas-title">MENU</h5>-->
+<!--        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>-->
+<!--    </div>-->
+<!--    <div class="offcanvas-body">-->
+<!--        <ul class="nav flex-column">-->
+<!--            <li class="nav-item"><a class="nav-link" href="/">首頁</a></li>-->
+<!--            <li class="nav-item"><a class="nav-link" href="/about">關於本會</a></li>-->
+<!--            <li class="nav-item"><a class="nav-link" href="/news">最新資訊</a></li>-->
+<!--            <li class="nav-item"><a class="nav-link" href="/download">下載專區</a></li>-->
+<!--            <li class="nav-item"><a class="nav-link" href="/rent">教室租借</a></li>-->
+<!--            <li class="nav-item"><a class="nav-link" href="/contact">聯絡我們</a></li>-->
+<!--            <li class="nav-item"><a class="nav-link" href="/shop">精油商城</a></li>-->
+<!--            <li class="nav-item"><a class="nav-link" href="/video">影音專區</a></li>-->
+<!--        </ul>-->
+<!--    </div>-->
+<!--</div>-->
+<!--{% if session.get("role") == "admin" %}-->
+<!--  <a href="{{ url_for('manage_users') }}">帳號管理</a>-->
+<!--{% endif %}-->
+
+<!-- -->
 <!-- templates/navbar.html -->
 <nav class="navbar navbar-light bg-light px-3 fixed-top shadow-sm">
-    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sideMenu">
-        ☰
-    </button>
-    <a class="navbar-brand ms-2 text-decoration-none text-dark" href="/">大台南芳薰香植物精油服務人員職業工會</a>
+  <!-- 漢堡按鈕 -->
+  <button class="btn btn-outline-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#sideMenu" aria-controls="sideMenu">
+    ☰
+  </button>
 
+  <!-- 品牌名稱 -->
+  <a class="navbar-brand ms-2 text-decoration-none text-dark" href="{{ url_for('index') }}">
+    大台南芳薰香植物精油服務人員職業工會
+  </a>
 
-    <div class="ms-auto d-flex align-items-center gap-2">
+  <!-- 右側：使用者 -->
+  <div class="ms-auto d-flex align-items-center gap-2">
     {% if session.get("username") %}
-<a href="{{ url_for('cart') }}" class="btn btn-outline-secondary">
-  🛒 購物車（{{ cart_count }}）
-</a>
-
-
-
-
-    {% endif %}
-
-
-    {% if session.get("username") %}
-        <span class="me-2 text-secondary">👋Dear. {{ session.username }}</span>
-        <a href="/change_password" class="btn btn-outline-secondary btn-sm">改密碼</a>
-        {% if session.role == "admin" %}
-            <a href="/upload" class="btn btn-outline-primary btn-sm">上傳影片</a>
-            <a href="/manage_products" class="btn btn-outline-primary btn-sm">商品管理</a>
-            <a href="/manage_users" class="btn btn-outline-primary btn-sm">帳號管理</a>
-            <a href="/manage_rents" class="btn btn-outline-primary btn-sm">確認租借資訊</a>
-        {% endif %}
-        <a href="/logout" class="btn btn-outline-danger btn-sm">登出</a>
+      <span class="me-2 text-secondary">👋 Dear. {{ session.get('username') }}</span>
+      <a href="{{ url_for('change_password') }}" class="btn btn-outline-secondary btn-sm">改密碼</a>
+      <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm">登出</a>
     {% else %}
-        <a href="/login" class="btn btn-outline-success btn-sm">登入</a>
-        <a href="/register" class="btn btn-outline-primary btn-sm">註冊</a>
+      <a href="{{ url_for('login') }}" class="btn btn-outline-success btn-sm">登入</a>
+      <a href="{{ url_for('register') }}" class="btn btn-outline-primary btn-sm">註冊</a>
     {% endif %}
-</div>
-
+  </div>
 </nav>
 
-<div class="offcanvas offcanvas-start" tabindex="-1" id="sideMenu">
-    <div class="offcanvas-header">
-        <h5 class="offcanvas-title">MENU</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
-    </div>
-    <div class="offcanvas-body">
-        <ul class="nav flex-column">
-            <li class="nav-item"><a class="nav-link" href="/">首頁</a></li>
-            <li class="nav-item"><a class="nav-link" href="/about">關於本會</a></li>
-            <li class="nav-item"><a class="nav-link" href="/news">最新資訊</a></li>
-            <li class="nav-item"><a class="nav-link" href="/download">下載專區</a></li>
-            <li class="nav-item"><a class="nav-link" href="/rent">教室租借</a></li>
-            <li class="nav-item"><a class="nav-link" href="/contact">聯絡我們</a></li>
-            <li class="nav-item"><a class="nav-link" href="/shop">精油商城</a></li>
-            <li class="nav-item"><a class="nav-link" href="/video">影音專區</a></li>
-        </ul>
-    </div>
+<!-- 左側 Offcanvas -->
+<div class="offcanvas offcanvas-start" tabindex="-1" id="sideMenu" aria-labelledby="sideMenuLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="sideMenuLabel">MENU</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+
+  <div class="offcanvas-body">
+    <!-- 一般導覽 -->
+    <ul class="nav flex-column mb-3">
+      <li class="nav-item"><a class="nav-link" href="{{ url_for('index') }}">首頁</a></li>
+      <li class="nav-item"><a class="nav-link" href="{{ url_for('about') }}">關於本會</a></li>
+      <li class="nav-item"><a class="nav-link" href="{{ url_for('news') }}">最新資訊</a></li>
+      <li class="nav-item"><a class="nav-link" href="{{ url_for('downloads') }}">下載專區</a></li>
+      <li class="nav-item"><a class="nav-link" href="{{ url_for('rent') }}">教室租借</a></li>
+      <li class="nav-item"><a class="nav-link" href="{{ url_for('contact') }}">聯絡我們</a></li>
+      <li class="nav-item"><a class="nav-link" href="{{ url_for('shop') }}">精油商城</a></li>
+      <li class="nav-item"><a class="nav-link" href="{{ url_for('video_gallery') }}">影音專區</a></li>
+    </ul>
+
+    {% if session.get("username") %}
+      <hr>
+      <!-- 購物車 -->
+      <ul class="nav flex-column mb-3">
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('cart') }}">🛒 購物車（{{ cart_count }}）</a></li>
+      </ul>
+    {% endif %}
+
+    {% if session.get('role') == 'admin' %}
+      <hr>
+      <!-- 綜合管理 -->
+      <ul class="nav flex-column">
+        <li class="nav-item">
+          <a class="nav-link d-flex justify-content-between align-items-center"
+             data-bs-toggle="collapse" href="#adminMenu" role="button"
+             aria-expanded="false" aria-controls="adminMenu">
+            綜合管理
+            <span class="arrow">&#9656;</span> <!-- ▶ -->
+          </a>
+          <div class="collapse ps-2" id="adminMenu">
+            <ul class="nav flex-column admin-submenu">
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_users') }}">帳號管理</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_products') }}">商品管理</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_rents') }}">確認租借資訊</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('upload_file') }}">上傳檔案</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('upload_video') }}">上傳影片</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('edit_about') }}">關於我們（編輯）</a></li>
+            </ul>
+          </div>
+        </li>
+      </ul>
+    {% endif %}
+  </div>
 </div>
-{% if session.get("role") == "admin" %}
-  <a href="{{ url_for('manage_users') }}">帳號管理</a>
-{% endif %}
+
+<!-- CSS -->
+<style>
+  .arrow {
+    transition: transform 0.2s ease;
+  }
+  .nav-link[aria-expanded="true"] .arrow {
+    transform: rotate(90deg); /* ▶ 轉 ▼ */
+  }
+
+  /* 綜合管理子選單 */
+  .admin-submenu {
+    background-color: #f8f9fa; /* 淺灰背景 */
+    border-left: 2px solid #dee2e6; /* 左側細線 */
+    margin-top: 5px;
+    padding: 5px 0;
+    border-radius: 4px;
+  }
+  .admin-submenu .nav-link {
+    color: #6c757d; /* 預設灰色 */
+    padding: 5px 15px;
+  }
+  .admin-submenu .nav-link:hover {
+    background-color: #e9ecef; /* hover 時淺灰底 */
+    color: #000; /* hover 時深灰字 */
+    border-radius: 3px;
+  }
+</style>
 

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}上傳檔案{% endblock %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 600px;">
+  <h2>📤 上傳檔案</h2>
+  <form method="POST" enctype="multipart/form-data">
+    <div class="mb-3">
+      <label class="form-label">檔案標題</label>
+      <input type="text" name="title" class="form-control" placeholder="例如：精油教學手冊">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">選擇檔案</label>
+      <input type="file" name="file" class="form-control">
+    </div>
+    <button type="submit" class="btn btn-success">上傳</button>
+  </form>
+</div>
+{% endblock %}

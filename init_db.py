@@ -92,7 +92,14 @@ def init_db():
             <ul><li>初始資料...</li></ul>
             ''',
         ))
-
+    cursor.execute("""
+            CREATE TABLE downloads (
+            id SERIAL PRIMARY KEY,
+            filename TEXT NOT NULL,        -- 實際檔名
+            title TEXT NOT NULL,           -- 管理員輸入的標題
+            uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            """)
 
 
     conn.commit()
