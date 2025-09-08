@@ -50,6 +50,21 @@ def load_products_from_db():
         }
     return products
 
+def ensure_about_row(conn):
+    with conn.cursor() as cur:
+        # 建表（若尚未建）
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS about_page (
+            id SERIAL PRIMARY KEY,
+            content TEXT NOT NULL DEFAULT ''
+        );
+        """)
+        # 確保有 id=1 這一列
+        cur.execute("SELECT id FROM about_page WHERE id = 1;")
+        row = cur.fetchone()
+        if not row:
+            cur.execute("INSERT INTO about_page (id, content) VALUES (1, '');")
+        conn.commit()
 # app = Flask(__name__)
 app.secret_key = 'your-secret-key'
 
@@ -96,31 +111,37 @@ def index():
 @app.route("/about")
 def about():
     conn = get_db_connection()
+    ensure_about_row(conn)
     cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT content FROM about_page WHERE id = 1")
+    cur.execute("SELECT content FROM about_page WHERE id = 1;")
     result = cur.fetchone()
     conn.close()
-    return render_template("about.html", content=result["content"])
-
-
+    content = (result or {}).get("content", "")
+    return render_template("about.html", content=content)
 
 @app.route("/edit_about", methods=["GET", "POST"])
 @admin_required
 def edit_about():
     conn = get_db_connection()
-    cur = conn.cursor()
-
+    ensure_about_row(conn)
     if request.method == "POST":
-        new_content = request.form["content"]
-        cur.execute("UPDATE about_page SET content = %s WHERE id = 1", (new_content,))
-        conn.commit()
+        new_content = request.form.get("content", "").strip()
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO about_page (id, content) VALUES (1, %s)
+                ON CONFLICT (id) DO UPDATE SET content = EXCLUDED.content;
+            """, (new_content,))
+            conn.commit()
         conn.close()
         flash("更新成功！")
         return redirect(url_for("about"))
 
-    cur.execute("SELECT content FROM about_page WHERE id = 1")
-    content = cur.fetchone()["content"]
+    # GET：把現有內容帶回編輯畫面
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT content FROM about_page WHERE id = 1;")
+    result = cur.fetchone()
     conn.close()
+    content = (result or {}).get("content", "")
     return render_template("edit_about.html", content=content)
 
 @app.route("/contact", methods=["GET", "POST"])
@@ -378,31 +399,31 @@ def remove_from_cart(pid):
 
     return redirect(url_for("cart"))
 
-@app.context_processor
-def inject_cart_count():
-    if "username" not in session:
-        print("❌ 沒登入，不查詢購物車")
-        return {"cart_count": 0}
-
-    try:
-        user_id = session["username"]
-        print("✅ 正在查詢購物車數量，user_id =", user_id)
-
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT SUM(quantity) AS sum FROM cart_items WHERE user_id = %s", (user_id,))
-        result = cursor.fetchone()
-        conn.close()
-
-        # print("🎯 查詢結果：", result)
-
-        count = result.get("sum", 0) if result else 0
-    except Exception as e:
-        print("⚠️ 購物車查詢錯誤：", e)
-        count = 0
-
-    print("✅ 最終 cart_count =", count)
-    return {"cart_count": count}
+# @app.context_processor
+# def inject_cart_count():
+#     if "username" not in session:
+#         print("❌ 沒登入，不查詢購物車")
+#         return {"cart_count": 0}
+#
+#     try:
+#         user_id = session["username"]
+#         print("✅ 正在查詢購物車數量，user_id =", user_id)
+#
+#         conn = get_db_connection()
+#         cursor = conn.cursor()
+#         cursor.execute("SELECT SUM(quantity) AS sum FROM cart_items WHERE user_id = %s", (user_id,))
+#         result = cursor.fetchone()
+#         conn.close()
+#
+#         # print("🎯 查詢結果：", result)
+#
+#         count = result.get("sum", 0) if result else 0
+#     except Exception as e:
+#         print("⚠️ 購物車查詢錯誤：", e)
+#         count = 0
+#
+#     print("✅ 最終 cart_count =", count)
+#     return {"cart_count": count}
 
 @app.route("/manage_products", methods=["GET", "POST"])
 @admin_required
@@ -620,22 +641,32 @@ def video_gallery():
 
 @app.context_processor
 def inject_cart_count():
-    cart_count = 0
-    if "username" in session:
-        user_id = session["username"]
-        conn = None
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT SUM(quantity) FROM cart_items WHERE user_id = %s", (user_id,))
-            result = cursor.fetchone()
-            cart_count = result[0] or 0
-        except Exception as e:
-            print("取得購物車數量錯誤：", e)
-        finally:
-            if conn:
-                conn.close()
-    return dict(cart_count=cart_count)
+    # 未登入或查不到資料 → 0
+    username = session.get("username")
+    if not username:
+        return dict(cart_count=0)
+
+    total = 0
+    conn = None
+    try:
+        conn = get_db_connection()
+        # 用 RealDictCursor，查回 dict；再用 COALESCE 避免 None
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute(
+            "SELECT COALESCE(SUM(quantity), 0) AS total FROM cart_items WHERE user_id = %s",
+            (username,)
+        )
+        row = cur.fetchone() or {}
+        total = row.get("total", 0)
+        print("✅ inject_cart_count → user_id =", username, "total =", total)
+    except Exception as e:
+        print("⚠️ inject_cart_count error:", e)
+    finally:
+        if conn:
+            conn.close()
+
+    return dict(cart_count=total)
+
 
 
 if __name__ == "__main__":

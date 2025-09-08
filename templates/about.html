@@ -2,7 +2,14 @@
 {% block title %}關於我們{% endblock %}
 {% block content %}
 <div class="container" style="margin-top: 90px">
-    {{ content | safe }}
+    {% if content.strip() %}
+        {{ content | safe }}
+    {% else %}
+        <div class="alert alert-info">
+            目前尚未新增「關於我們」的內容，請管理員點選下方按鈕進行編輯。
+        </div>
+    {% endif %}
+
     {% if session.get("role") == "admin" %}
         <a href="{{ url_for('edit_about') }}" class="btn btn-primary mt-3">✏️ 編輯內容</a>
     {% endif %}
