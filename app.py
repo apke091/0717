@@ -309,42 +309,48 @@ def shop():
     products = load_products_from_db()
     return render_template("shop.html", products=products)
 
-@app.route("/add_to_cart/<pid>")
+@app.route("/add_to_cart/<pid>", methods=["GET", "POST"])
 def add_to_cart(pid):
     if "username" not in session:
         flash("請先登入才能加入購物車")
         return redirect(url_for("login"))
 
-    user_id = session["username"]  # 登入帳號當作 user_id
+    user_id = session["username"]
     products = load_products_from_db()
 
     if pid not in products:
         flash("商品不存在")
         return redirect(url_for("shop"))
+
+    # 取得數量（POST 來自商城表單；GET 則預設 1）
+    try:
+        qty = int(request.form.get("qty", 1)) if request.method == "POST" else 1
+        if qty < 1:
+            qty = 1
+    except Exception:
+        qty = 1
+
     conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-
-        # 嘗試插入商品，如果已存在就加一筆數量
         cursor.execute("""
             INSERT INTO cart_items (user_id, product_id, quantity)
-            VALUES (%s, %s, 1)
+            VALUES (%s, %s, %s)
             ON CONFLICT (user_id, product_id)
-            DO UPDATE SET quantity = cart_items.quantity + 1
-        """, (user_id, pid))
-
+            DO UPDATE SET quantity = cart_items.quantity + EXCLUDED.quantity
+        """, (user_id, pid, qty))
         conn.commit()
-        flash("✅ 已加入購物車")
-
+        flash(f"✅ 已加入購物車（{qty} 件）")
     except Exception as e:
         print("加入購物車錯誤：", e)
         flash("❌ 加入購物車失敗，請稍後再試")
-
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
     return redirect(url_for("shop"))
+
 
 @app.route("/cart")
 def cart():
@@ -377,6 +383,47 @@ def cart():
 
     return render_template("cart.html", items=items, total=total)
 
+@app.route("/update_cart_qty", methods=["POST"])
+def update_cart_qty():
+    if "username" not in session:
+        flash("請先登入")
+        return redirect(url_for("login"))
+
+    user_id = session["username"]
+    pids = request.form.getlist("pid[]")
+    qtys = request.form.getlist("qty[]")
+
+    if not pids or not qtys or len(pids) != len(qtys):
+        flash("❌ 更新失敗，資料不完整")
+        return redirect(url_for("cart"))
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        for pid, qty_str in zip(pids, qtys):
+            try:
+                q = int(qty_str)
+                if q < 1:
+                    q = 1
+            except Exception:
+                q = 1
+            cursor.execute("""
+                UPDATE cart_items
+                SET quantity = %s
+                WHERE user_id = %s AND product_id = %s
+            """, (q, user_id, pid))
+        conn.commit()
+        flash("✅ 數量已更新")
+    except Exception as e:
+        print("更新購物車數量錯誤：", e)
+        flash("❌ 數量更新失敗，請稍後再試")
+    finally:
+        if conn:
+            conn.close()
+
+    return redirect(url_for("cart"))
+
 @app.route("/remove_from_cart/<pid>")
 def remove_from_cart(pid):
     if "username" not in session:
@@ -399,31 +446,6 @@ def remove_from_cart(pid):
 
     return redirect(url_for("cart"))
 
-# @app.context_processor
-# def inject_cart_count():
-#     if "username" not in session:
-#         print("❌ 沒登入，不查詢購物車")
-#         return {"cart_count": 0}
-#
-#     try:
-#         user_id = session["username"]
-#         print("✅ 正在查詢購物車數量，user_id =", user_id)
-#
-#         conn = get_db_connection()
-#         cursor = conn.cursor()
-#         cursor.execute("SELECT SUM(quantity) AS sum FROM cart_items WHERE user_id = %s", (user_id,))
-#         result = cursor.fetchone()
-#         conn.close()
-#
-#         # print("🎯 查詢結果：", result)
-#
-#         count = result.get("sum", 0) if result else 0
-#     except Exception as e:
-#         print("⚠️ 購物車查詢錯誤：", e)
-#         count = 0
-#
-#     print("✅ 最終 cart_count =", count)
-#     return {"cart_count": count}
 
 @app.route("/manage_products", methods=["GET", "POST"])
 @admin_required
