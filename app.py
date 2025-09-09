@@ -152,49 +152,53 @@ def contact():
         message = request.form.get("message")
         answer = request.form.get("captcha_answer")
 
+        # 必填檢查
         if not name or not email or not message or not answer:
-            flash("❌ 所有欄位都必填")
+            flash("❌ 所有欄位都必填", "warning")
             return redirect(url_for("contact"))
 
-        # 驗證驗證碼
+        # 驗證碼檢查
         if str(session.get("captcha_answer")) != str(answer).strip():
-            flash("⚠️ 驗證碼錯誤，請再試一次")
+            flash("⚠️ 驗證碼錯誤，請再試一次", "danger")
             return redirect(url_for("contact"))
 
-        # 寫進 contact_messages 資料表
+        # 寫進 contact_messages
         try:
             conn = get_db_connection()
-            cur = conn.cursor()
-            cur.execute(
-                "INSERT INTO contact_messages (name, email, message) VALUES (%s, %s, %s)",
-                (name, email, message)
-            )
-            conn.commit()
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "INSERT INTO contact_messages (name, email, message) VALUES (%s, %s, %s)",
+                        (name, email, message)
+                    )
             conn.close()
         except Exception as e:
-            flash("⚠️ 儲存留言失敗：" + str(e))
+            flash("⚠️ 儲存留言失敗：" + str(e), "danger")
             return redirect(url_for("contact"))
 
-        # 寄 email
-        msg = Message("🔔 聯絡表單留言",
-                      recipients=[os.environ.get("MAIL_RECEIVER")])
-        msg.body = f"""
+        # 寄 Email
+        try:
+            receiver = os.environ.get("CONTACT_TO") or os.environ.get("MAIL_RECEIVER")
+            msg = Message(
+                subject="🔔 聯絡表單留言",
+                recipients=[receiver],
+                body=f"""
 📩 姓名：{name}
 📧 Email：{email}
 📝 留言內容：
 {message}
-        """
-        try:
+                """
+            )
             mail.send(msg)
-            flash("✅ 留言已送出，我們會盡快回覆您！")
+            flash("✅ 留言已送出，我們會盡快回覆您！", "success")
         except Exception as e:
-            flash("⚠️ 寄送 email 失敗：" + str(e))
+            flash("⚠️ 寄送 email 失敗：" + str(e), "danger")
 
         return redirect(url_for("contact"))
 
-    # GET 請求：產生驗證碼題目
+    # GET：產生驗證碼
     a, b = random.randint(1, 9), random.randint(1, 9)
-    session["captcha_answer"] = a + b
+    session["captcha_answer"] = str(a + b)
     return render_template("contact.html", captcha_question=f"{a} + {b} = ?")
 
 @app.route("/download")

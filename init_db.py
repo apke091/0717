@@ -65,7 +65,7 @@ def init_db():
     );
     """)
 
-    # about_page（content 加 DEFAULT '' 較安全）
+    # about_page
     cur.execute("""
     CREATE TABLE IF NOT EXISTS about_page (
         id SERIAL PRIMARY KEY,
@@ -73,7 +73,7 @@ def init_db():
     );
     """)
 
-    # 初始 about_page 內容（若完全沒有資料）
+    # 初始化 about_page（若沒有任何資料）
     cur.execute("SELECT COUNT(*) AS count FROM about_page;")
     count = cur.fetchone()["count"]
     if count == 0:
@@ -85,13 +85,24 @@ def init_db():
             <ul><li>（這是初始內容，之後可在後台編輯頁修改）</li></ul>
         """,))
 
-    # downloads（加 IF NOT EXISTS，避免二次跑報錯）
+    # downloads
     cur.execute("""
     CREATE TABLE IF NOT EXISTS downloads (
         id SERIAL PRIMARY KEY,
         filename TEXT NOT NULL,
         title TEXT NOT NULL,
         uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
+
+    # ✅ contact_messages：聯絡我們留言
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS contact_messages (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        message TEXT NOT NULL,
+        submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """)
 
