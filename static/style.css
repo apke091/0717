@@ -96,3 +96,134 @@ video {
     display: block;
     margin-bottom: 10px;
 }
+
+/* 漂亮版購物車數量徽章 */
+/* 基礎樣式（留著不動） */
+.cart-badge{
+  display:inline-block !important;
+  min-width:1.6em;
+  padding:2px 10px;
+  border-radius:999px;
+  color:#fff;
+  font-weight:700;
+  font-size:.78rem;
+  line-height:1.2;
+  border:1px solid rgba(255,255,255,.45);
+  text-shadow:0 1px 0 rgba(0,0,0,.15);
+  box-shadow:0 2px 10px rgba(0,0,0,.15);
+  transform-origin:center;
+}
+.cart-badge.pop{ animation:cartPop .25s ease; }
+@keyframes cartPop{ 0%{transform:scale(.9)} 70%{transform:scale(1.1)} 100%{transform:scale(1)} }
+
+/* 漸層主題：挑一個加在 .cart-badge 後面即可 */
+.cart-badge.g-purple {
+  background:linear-gradient(135deg,#c084fc,#7c3aed);
+  box-shadow:0 2px 10px rgba(124,58,237,.35);
+}
+/* 白色膠囊（高對比、乾淨） */
+a.nav-link .cart-badge{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:1.6em; padding:2px 10px; border-radius:9999px;
+  background:#ffffff;                          /* 純白底 */
+  color:#1f2937 !important;                    /* 深灰字，對比高 */
+  font-weight:700; font-size:.78rem; line-height:1.1;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  border:1px solid rgba(2,6,23,.08);           /* 超細灰框 */
+  box-shadow:
+    0 8px 18px rgba(2,6,23,.10),               /* 柔和外陰影 */
+    inset 0 1px 0 rgba(255,255,255,.9);        /* 內亮邊 */
+}
+
+/* 微彈跳動畫（保留） */
+a.nav-link .cart-badge.pop{ animation:cartPop .22s ease; }
+@keyframes cartPop{ 0%{transform:scale(.9)} 70%{transform:scale(1.08)} 100%{transform:scale(1)} }
+
+/* 白底 + 品牌色細框（想更有存在感就加這個 class） */
+a.nav-link .cart-badge.ring-purple{
+  border-color: rgba(124,58,237,.35);          /* #7c3aed */
+  box-shadow:
+    0 0 0 2px rgba(124,58,237,.15),            /* 外發光細圈 */
+    0 8px 18px rgba(2,6,23,.10),
+    inset 0 1px 0 rgba(255,255,255,.9);
+}
+
+/* === Hero arrows — 玻璃感白箭頭（完全不藍）=== */
+.hero-carousel .carousel-control-prev,
+.hero-carousel .carousel-control-next {
+  /* 可調參數 */
+  --hero-arrow-size: 52px;
+  --hero-arrow-bg: rgba(16,16,16,.45);
+  --hero-arrow-bg-hover: rgba(16,16,16,.70);
+  --hero-arrow-border: rgba(255,255,255,.35);
+  --hero-arrow-icon: #fff;
+
+  position: absolute;
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+  width: var(--hero-arrow-size);
+  height: var(--hero-arrow-size);
+  opacity: 1;                      /* 永遠顯示（不要淡出） */
+  border-radius: 999px;            /* 圓形 */
+  background: var(--hero-arrow-bg);
+  border: 1px solid var(--hero-arrow-border);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 8px 22px rgba(0,0,0,.25);
+  transition: background .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+.hero-carousel .carousel-control-prev { left: 12px; }
+.hero-carousel .carousel-control-next { right: 12px; }
+
+.hero-carousel .carousel-control-prev:hover,
+.hero-carousel .carousel-control-next:hover {
+  background: var(--hero-arrow-bg-hover);
+  transform: translateY(-50%) scale(1.06);
+  box-shadow: 0 12px 30px rgba(0,0,0,.35);
+}
+.hero-carousel .carousel-control-prev:active,
+.hero-carousel .carousel-control-next:active {
+  transform: translateY(-50%) scale(.96);
+}
+
+/* 取代 Bootstrap 預設箭頭圖示，改用白色 chevron（不吃主題色） */
+.hero-carousel .carousel-control-prev-icon,
+.hero-carousel .carousel-control-next-icon {
+  width: 18px;
+  height: 18px;
+  background: var(--hero-arrow-icon);   /* 箭頭顏色 */
+  background-image: none;               /* 關掉預設 SVG */
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+          mask-position: center;
+}
+.hero-carousel .carousel-control-prev-icon {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M10 3 L5 8 L10 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+          mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M10 3 L5 8 L10 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.hero-carousel .carousel-control-next-icon {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 3 L11 8 L6 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+          mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 3 L11 8 L6 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* 客製焦點樣式（移除預設藍色 focus ring） */
+.hero-carousel .carousel-control-prev:focus-visible,
+.hero-carousel .carousel-control-next:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.6);
+}
+
+/* 手機調小一點 */
+@media (max-width: 576px) {
+  .hero-carousel .carousel-control-prev,
+  .hero-carousel .carousel-control-next {
+    --hero-arrow-size: 44px;
+  }
+}
+
+

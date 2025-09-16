@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}結帳{% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top: 90px">
+  <h2>🧾 結帳清單</h2>
+
+  <table class="table table-bordered align-middle">
+    <thead>
+      <tr>
+        <th>商品名稱</th>
+        <th>單價</th>
+        <th>數量</th>
+        <th>小計</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in items %}
+      <tr>
+        <td>{{ it.name }}</td>
+        <td>{{ it.price }} 元</td>
+        <td>{{ it.qty }}</td>
+        <td>{{ it.subtotal }} 元</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3" class="text-end fw-bold">合計：</td>
+        <td class="fw-bold fs-5">{{ total }} 元</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('cart') }}" class="btn btn-outline-secondary">返回購物車</a>
+    <!-- 這裡可以接你未來的付款 / 建立訂單流程 -->
+    <button class="btn btn-success" disabled>確認下單（待串接）</button>
+  </div>
+</div>
+{% endblock %}

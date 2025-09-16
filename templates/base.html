@@ -35,17 +35,25 @@
   {% include "navbar.html" %}
 
   <!-- ✅ flash 訊息（用 container 包住，不影響其他頁）-->
-  {% with messages = get_flashed_messages() %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
-  <div class="container" style="padding-top: 70px">
-    <div class="alert alert-warning">
-    {% for message in messages %}
-      <div>{{ message }}</div>
+  <div class="container mt-3" id="flash-container">
+    {% for category, message in messages %}
+      <div class="alert alert-{{ 'success' if category in ['message','success'] else category }} alert-dismissible fade show flash-auto" role="alert">
+        {{ message|safe }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
     {% endfor %}
-    </div>
   </div>
+  <script>
+    // 2 秒後自動移除 flash 訊息（不依賴 Bootstrap JS）
+    setTimeout(() => {
+      document.querySelectorAll('.flash-auto').forEach(el => el.remove());
+    }, 2000);
+  </script>
   {% endif %}
-  {% endwith %}
+{% endwith %}
+
 
   <!-- ✅ 主要內容區（不包 container，給各頁自己決定）-->
   {% block content %}{% endblock %}

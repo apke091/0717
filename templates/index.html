@@ -2,74 +2,167 @@
 {% block title %}精油工會首頁{% endblock %}
 
 {% block content %}
-<!-- 🔝 滿版 Hero 區 -->
-<div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
-  <div class="carousel-inner">
-    <div class="carousel-item active">
-      <img src="https://picsum.photos/1920/800?random=1" class="d-block w-100" alt="banner1">
-      <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-3">
-        <h1 class="fw-bold text-white">歡迎來到精油工會</h1>
-        <p>推廣芳香療法與天然精油</p>
-      </div>
-    </div>
-    <div class="carousel-item">
-      <img src="https://picsum.photos/1920/800?random=2" class="d-block w-100" alt="banner2">
-      <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-3">
-        <h1 class="fw-bold text-white">天然精油，守護您的生活</h1>
-        <p>探索多樣商品與教學影片</p>
-      </div>
-    </div>
-    <div class="carousel-item">
-      <img src="https://picsum.photos/1920/800?random=3" class="d-block w-100" alt="banner3">
-      <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-3">
-        <h1 class="fw-bold text-white">加入我們的芳療社群</h1>
-        <p>健康生活由此開始</p>
-      </div>
-    </div>
-  </div>
+<style>
+  /* Hero 區塊設定（用 class，避免跟別頁 id 衝突） */
+  .hero-wrap { margin-top: 76px; }
+  .hero-carousel .carousel-item { height: 420px; }
+  .hero-carousel .carousel-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 16px;
+  }
+  .hero-carousel .carousel-caption {
+    left: 0; right: 0; bottom: 0;
+    margin: 0 1rem 1rem;
+    padding: 1.25rem 1rem;
+    border-radius: 12px;
+    background: linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,0));
+  }
 
-  <!-- 左右切換箭頭 -->
-  <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
-    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-  </button>
-  <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
-    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-  </button>
+  /* 功能卡片 hover 效果 */
+  .feature-card { transition: transform .25s ease, box-shadow .25s ease; }
+  .feature-card:hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(0,0,0,.12); }
+  .feature-card img { height: 180px; object-fit: cover; }
+
+  /* 最新消息 */
+  .news-item .badge-date { font-weight: 600; min-width: 7.5rem; }
+
+  /* 玻璃感白箭頭（不會出現藍色） */
+  .hero-carousel .carousel-control-prev,
+  .hero-carousel .carousel-control-next {
+    --hero-arrow-size: 52px;
+    --hero-arrow-bg: rgba(16,16,16,.45);
+    --hero-arrow-bg-hover: rgba(16,16,16,.70);
+    --hero-arrow-border: rgba(255,255,255,.35);
+    --hero-arrow-icon: #fff;
+
+    position: absolute;
+    top: 50%;
+    width: var(--hero-arrow-size);
+    height: var(--hero-arrow-size);
+    opacity: 1;
+    border-radius: 999px;
+    background: var(--hero-arrow-bg);
+    border: 1px solid var(--hero-arrow-border);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    box-shadow: 0 8px 22px rgba(0,0,0,.25);
+    transform: translateY(-50%);
+    transition: background .2s ease, transform .2s ease, box-shadow .2s ease;
+  }
+  .hero-carousel .carousel-control-prev { left: 12px; }
+  .hero-carousel .carousel-control-next { right: 12px; }
+  .hero-carousel .carousel-control-prev:hover,
+  .hero-carousel .carousel-control-next:hover {
+    background: var(--hero-arrow-bg-hover);
+    transform: translateY(-50%) scale(1.06);
+    box-shadow: 0 12px 30px rgba(0,0,0,.35);
+  }
+  .hero-carousel .carousel-control-prev:active,
+  .hero-carousel .carousel-control-next:active { transform: translateY(-50%) scale(.96); }
+
+  /* 取代預設箭頭為白色 chevron */
+  .hero-carousel .carousel-control-prev-icon,
+  .hero-carousel .carousel-control-next-icon {
+    width: 18px; height: 18px;
+    background: var(--hero-arrow-icon);
+    background-image: none;
+    -webkit-mask-size: contain; mask-size: contain;
+    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+    -webkit-mask-position: center; mask-position: center;
+  }
+  .hero-carousel .carousel-control-prev-icon {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M10 3 L5 8 L10 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M10 3 L5 8 L10 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+  .hero-carousel .carousel-control-next-icon {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 3 L11 8 L6 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 3 L11 8 L6 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  }
+  .hero-carousel .carousel-control-prev:focus-visible,
+  .hero-carousel .carousel-control-next:focus-visible {
+    outline: none; box-shadow: 0 0 0 3px rgba(255,255,255,.6);
+  }
+
+  /* 手機調整 */
+  @media (max-width: 576px) {
+    .hero-carousel .carousel-item { height: 300px; }
+    .news-item { flex-direction: column; align-items: flex-start !important; gap: .5rem; }
+    .news-item .badge-date { min-width: auto; }
+  }
+</style>
+
+<!-- 🔝 Hero（最寬 .container-xxl） -->
+<div class="container-xxl hero-wrap">
+  <!-- ✅ 改成 heroCarouselIndex，並加 hero-carousel class -->
+  <div id="heroCarouselIndex" class="carousel slide hero-carousel" data-bs-ride="carousel" data-bs-interval="4000" aria-label="首頁輪播">
+    <div class="carousel-inner">
+      <div class="carousel-item active">
+        <img src="https://picsum.photos/1600/800?random=1" class="d-block w-100" alt="banner1">
+        <div class="carousel-caption text-start">
+          <h1 class="fw-bold text-white mb-1">歡迎來到精油工會</h1>
+          <p class="text-white-50 mb-0">推廣芳香療法與天然精油</p>
+        </div>
+      </div>
+      <div class="carousel-item">
+        <img src="https://picsum.photos/1600/800?random=2" class="d-block w-100" alt="banner2">
+        <div class="carousel-caption text-start">
+          <h1 class="fw-bold text-white mb-1">天然精油，守護您的生活</h1>
+          <p class="text-white-50 mb-0">探索多樣商品與教學影片</p>
+        </div>
+      </div>
+      <div class="carousel-item">
+        <img src="https://picsum.photos/1600/800?random=3" class="d-block w-100" alt="banner3">
+        <div class="carousel-caption text-start">
+          <h1 class="fw-bold text-white mb-1">加入我們的芳療社群</h1>
+          <p class="text-white-50 mb-0">健康生活由此開始</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 左右切換箭頭（同步改 target） -->
+    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarouselIndex" data-bs-slide="prev" aria-label="上一張">
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#heroCarouselIndex" data-bs-slide="next" aria-label="下一張">
+      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+    </button>
+  </div>
 </div>
 
-
-<!-- 🟩 功能區塊（滿版） -->
-<div class="container-fluid px-5 py-5 bg-light">
-  <div class="row text-center g-4">
+<!-- 🟩 功能區塊（中等寬 .container-xl） -->
+<div class="container-xl py-5">
+  <div class="row g-4">
     <div class="col-md-4">
       <a href="/shop" class="text-decoration-none text-dark">
-        <div class="card h-100 shadow-sm">
+        <div class="card h-100 shadow-sm feature-card">
           <img src="https://d1grca2t3zpuug.cloudfront.net/2022/05/oilmain.jpg" class="card-img-top" alt="精油商城">
           <div class="card-body">
             <h5 class="card-title">🛍️ 精油商城</h5>
-            <p class="card-text">選購天然精油與芳療用品</p>
+            <p class="card-text text-secondary mb-0">選購天然精油與芳療用品</p>
           </div>
         </div>
       </a>
     </div>
     <div class="col-md-4">
       <a href="/rent" class="text-decoration-none text-dark">
-        <div class="card h-100 shadow-sm">
+        <div class="card h-100 shadow-sm feature-card">
           <img src="https://cdna.artstation.com/p/assets/images/images/012/272/798/large/-3d-01.jpg?1533921415" class="card-img-top" alt="教室租借">
           <div class="card-body">
             <h5 class="card-title">🏠 教室租借</h5>
-            <p class="card-text">租借本會教室舉辦課程與活動</p>
+            <p class="card-text text-secondary mb-0">租借本會教室舉辦課程與活動</p>
           </div>
         </div>
       </a>
     </div>
     <div class="col-md-4">
       <a href="/video" class="text-decoration-none text-dark">
-        <div class="card h-100 shadow-sm">
+        <div class="card h-100 shadow-sm feature-card">
           <img src="https://imjaylin.com/wp-content/uploads/2020/09/FlexClip%E7%B7%9A%E4%B8%8A%E5%BD%B1%E7%89%87%E5%89%AA%E8%BC%AF%E5%B7%A5%E5%85%B7-1.jpg" class="card-img-top" alt="影音專區">
           <div class="card-body">
             <h5 class="card-title">🎬 影音專區</h5>
-            <p class="card-text">精油教學與活動回顧影片</p>
+            <p class="card-text text-secondary mb-0">精油教學與活動回顧影片</p>
           </div>
         </div>
       </a>
@@ -77,34 +170,25 @@
   </div>
 </div>
 
-<!-- 📰 最新消息（滿版表格） -->
-<div class="container-fluid px-5 py-5">
-  <h4 class="mb-4">📢 最新消息</h4>
-  <table class="table table-bordered table-hover bg-white shadow">
-    <thead class="table-light">
-      <tr>
-        <th>日期</th>
-        <th>標題</th>
-        <th>操作</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>2025-07-10</td>
-        <td>精油使用教學影片上架囉！</td>
-        <td><a href="/video" class="btn btn-sm btn-outline-primary">查看</a></td>
-      </tr>
-      <tr>
-        <td>2025-07-01</td>
-        <td>開放教室租借服務</td>
-        <td><a href="/rent" class="btn btn-sm btn-outline-primary">了解更多</a></td>
-      </tr>
-      <tr>
-        <td>2025-06-20</td>
-        <td>夏季精油優惠活動開跑！</td>
-        <td><a href="/shop" class="btn btn-sm btn-outline-primary">前往選購</a></td>
-      </tr>
-    </tbody>
-  </table>
+<!-- 📰 最新消息（窄 .container-lg） -->
+<div class="container-lg pb-5">
+  <h4 class="mb-3">📢 最新消息</h4>
+  <ul class="list-group shadow-sm">
+    <li class="list-group-item d-flex justify-content-between align-items-center news-item">
+      <span class="badge bg-light text-dark badge-date">2025-07-10</span>
+      <span class="me-auto ms-3">精油使用教學影片上架囉！</span>
+      <a href="/video" class="btn btn-sm btn-outline-primary">查看</a>
+    </li>
+    <li class="list-group-item d-flex justify-content-between align-items-center news-item">
+      <span class="badge bg-light text-dark badge-date">2025-07-01</span>
+      <span class="me-auto ms-3">開放教室租借服務</span>
+      <a href="/rent" class="btn btn-sm btn-outline-primary">了解更多</a>
+    </li>
+    <li class="list-group-item d-flex justify-content-between align-items-center news-item">
+      <span class="badge bg-light text-dark badge-date">2025-06-20</span>
+      <span class="me-auto ms-3">夏季精油優惠活動開跑！</span>
+      <a href="/shop" class="btn btn-sm btn-outline-primary">前往選購</a>
+    </li>
+  </ul>
 </div>
 {% endblock %}

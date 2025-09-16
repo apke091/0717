@@ -46,7 +46,16 @@
       <hr>
       <!-- 購物車 -->
       <ul class="nav flex-column mb-3">
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('cart') }}">🛒 購物車（{{ cart_count }}）</a></li>
+        <li class="nav-item">
+  <a class="nav-link d-inline-flex align-items-center" href="{{ url_for('cart') }}" id="cartLink">
+    🛒 購物車
+    {% if (cart_count|int) > 0 %}
+      <span class="ms-1 cart-badge">{{ (cart_count|int) if (cart_count|int) <= 99 else '99+' }}</span>
+    {% endif %}
+  </a>
+</li>
+
+
       </ul>
     {% endif %}
 

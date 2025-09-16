@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_mail import Mail, Message
 import os
 import re
@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 from datetime import datetime
 import random
 load_dotenv()
+
+
 
 
 app = Flask(__name__)
@@ -516,6 +518,94 @@ def clear_cart():
         conn.close()
 
     return redirect(url_for("cart"))
+
+@app.route("/checkout", methods=["POST"])
+def checkout():
+    if "username" not in session:
+        flash("請先登入")
+        return redirect(url_for("login"))
+
+    user_id = session["username"]
+    pids = request.form.getlist("pid[]")
+    qtys = request.form.getlist("qty[]")
+
+    if not pids or not qtys or len(pids) != len(qtys):
+        flash("❌ 結帳資料不完整")
+        return redirect(url_for("cart"))
+
+    # 轉成整數並過濾非法數量
+    cleaned = []
+    for pid, qty_str in zip(pids, qtys):
+        try:
+            q = int(qty_str)
+            if q > 0:
+                cleaned.append((pid, q))
+        except Exception:
+            pass
+    if not cleaned:
+        flash("❌ 沒有可結帳的商品")
+        return redirect(url_for("cart"))
+
+    # 從資料庫抓商品資訊
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    only_pids = [pid for pid, _ in cleaned]
+    cursor.execute("SELECT pid, name, price FROM products WHERE pid = ANY(%s)", (only_pids,))
+    rows = cursor.fetchall()
+    conn.close()
+
+    # 組合成結帳清單
+    info = {r["pid"]: r for r in rows}
+    items = []
+    total = 0
+    for pid, q in cleaned:
+        if pid in info:
+            name = info[pid]["name"]
+            price = info[pid]["price"]
+            subtotal = price * q
+            total += subtotal
+            items.append({"pid": pid, "name": name, "price": price, "qty": q, "subtotal": subtotal})
+
+    if not items:
+        flash("❌ 沒有可結帳的商品")
+        return redirect(url_for("cart"))
+
+    return render_template("checkout.html", items=items, total=total)
+
+# 需要在檔案頂端加： from flask import jsonify
+
+@app.route("/api/cart/qty", methods=["POST"])
+def api_cart_qty():
+    if "username" not in session:
+        return jsonify({"ok": False, "error": "login_required"}), 401
+
+    data = request.get_json(silent=True) or {}
+    pid = data.get("pid")
+    try:
+        qty = int(data.get("qty", 1))
+    except Exception:
+        qty = 1
+    if qty < 1:
+        qty = 1
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE cart_items
+            SET quantity = %s
+            WHERE user_id = %s AND product_id = %s
+        """, (qty, session["username"], pid))
+        conn.commit()
+        return jsonify({"ok": True, "qty": qty})
+    except Exception as e:
+        print("API 更新數量錯誤：", e)
+        return jsonify({"ok": False, "error": "server_error"}), 500
+    finally:
+        if conn:
+            conn.close()
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():

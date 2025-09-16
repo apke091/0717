@@ -6,33 +6,35 @@
   <h2>🛒 購物車</h2>
 
   {% if items %}
-  <form method="POST" action="{{ url_for('update_cart_qty') }}">
+  <form id="updateForm" method="POST" action="{{ url_for('update_cart_qty') }}">
     <table class="table table-striped table-hover align-middle">
       <thead class="table-light">
         <tr>
-          <th style="width: 60px;">
-            <!-- 全選 / 全不選 -->
-            <input type="checkbox" id="checkAll" checked>
+          <th style="width: 120px;">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="checkAll">
+              <label class="form-check-label" for="checkAll">全選</label>
+            </div>
           </th>
+
           <th>商品名稱</th>
           <th>單價</th>
-          <th style="width: 160px;">數量</th>
+          <th style="width: 200px;">數量</th>
           <th>小計</th>
           <th>操作</th>
         </tr>
       </thead>
       <tbody id="cartBody">
         {% for item in items %}
-        <tr data-price="{{ item.price }}">
-          <td>
-            <input type="checkbox" class="item-check" checked>
-          </td>
+        <tr data-price="{{ item.price|int }}">
+          <td><input type="checkbox" class="item-check"></td>
           <td>{{ item.name }}</td>
-          <td class="price-cell">{{ item.price }} 元</td>
+          <td class="price-cell">{{ item.price|int }} 元</td>
           <td>
             <div class="d-flex align-items-center gap-2">
               <input type="hidden" name="pid[]" value="{{ item.pid }}">
-              <input type="number" name="qty[]" class="form-control qty-input" value="{{ item.quantity }}" min="1" step="1" required style="max-width: 110px;">
+              <input type="number" name="qty[]" class="form-control qty-input"
+                     value="{{ item.quantity|int }}" min="1" step="1" required style="max-width: 110px;">
               <button type="button" class="btn btn-outline-secondary btn-sm btn-dec">－</button>
               <button type="button" class="btn btn-outline-secondary btn-sm btn-inc">＋</button>
             </div>
@@ -52,21 +54,26 @@
         </tr>
       </tfoot>
     </table>
-
-    <div class="d-flex gap-2">
-      <button type="submit" class="btn btn-primary">更新數量</button>
-
-      <form method="POST" action="{{ url_for('clear_cart') }}">
-        <button type="submit" class="btn btn-outline-warning">清空購物車</button>
-      </form>
-    </div>
+    <!-- ❌ 原本的「更新數量」按鈕移除，改為自動儲存 -->
   </form>
+
+  <div class="mt-3 d-flex flex-wrap gap-2">
+    <a href="{{ url_for('shop') }}" class="btn btn-outline-secondary">回商城</a>
+
+    <form method="POST" action="{{ url_for('clear_cart') }}" class="d-inline">
+      <button type="submit" class="btn btn-outline-warning">清空購物車</button>
+    </form>
+
+    <form id="checkoutForm" method="POST" action="{{ url_for('checkout') }}" class="d-inline">
+      <button type="button" id="checkoutBtn" class="btn btn-success">結帳</button>
+    </form>
+  </div>
+
   {% else %}
     <div class="alert alert-info">購物車是空的，去逛逛吧！</div>
   {% endif %}
 </div>
 
-<!-- ✅ 前端動態計算：只有勾選的才計入總金額；數量變動即時更新小計與合計 -->
 <script>
   (function () {
     const body = document.getElementById('cartBody');
@@ -74,31 +81,87 @@
 
     const checkAll = document.getElementById('checkAll');
     const totalCell = document.getElementById('totalCell');
+    const CART_URL = "{{ url_for('cart') }}";
+    const API_UPDATE = "{{ url_for('api_cart_qty') }}";
 
-    function formatCurrency(n) {
-      return new Intl.NumberFormat('zh-TW').format(n) + ' 元';
-    }
+    function fmt(n){ return new Intl.NumberFormat('zh-TW').format(n) + ' 元'; }
 
+    // 計算單列小計
     function recalcRow(tr) {
-      const price = parseInt(tr.getAttribute('data-price'), 10) || 0;
+      let price = parseInt(tr.getAttribute('data-price'), 10);
+      if (!Number.isFinite(price) || price < 0) price = 0;
+
       const qtyInput = tr.querySelector('.qty-input');
-      let qty = parseInt(qtyInput.value, 10) || 1;
-      if (qty < 1) { qty = 1; qtyInput.value = 1; }
+      let qty = parseInt(qtyInput.value, 10);
+      if (!Number.isFinite(qty) || qty < 1) { qty = 1; qtyInput.value = 1; }
+
       const subtotal = price * qty;
-      tr.querySelector('.subtotal-cell').textContent = formatCurrency(subtotal);
-      return { subtotal, checked: tr.querySelector('.item-check').checked };
+      tr.querySelector('.subtotal-cell').textContent = fmt(subtotal);
+      return { subtotal, checked: tr.querySelector('.item-check').checked, qty };
     }
 
+    // 計算總計（只算勾選的）
     function recalcAll() {
       let total = 0;
       body.querySelectorAll('tr').forEach(tr => {
         const { subtotal, checked } = recalcRow(tr);
         if (checked) total += subtotal;
       });
-      totalCell.textContent = formatCurrency(total);
+      totalCell.textContent = fmt(total);
     }
 
-    // 事件：數量加減按鈕、輸入框、勾選框、全選
+    // 更新 Offcanvas 徽章數字（所有行數量合計），並加上彈跳動畫
+    function updateCartBadge() {
+      let sum = 0;
+      body.querySelectorAll('.qty-input').forEach(i => {
+        sum += Math.max(0, parseInt(i.value, 10) || 0);
+      });
+
+      const link = document.getElementById('cartLink');
+      if (!link) return;
+
+      let badge = link.querySelector('.cart-badge');
+      if (sum <= 0) {
+        if (badge) badge.remove();
+        return;
+      }
+
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'ms-1 cart-badge';
+        link.appendChild(badge);
+      }
+      badge.textContent = (sum <= 99) ? String(sum) : '99+';
+      // 微彈跳
+      badge.classList.remove('pop');
+      void badge.offsetWidth; // 重新觸發動畫
+      badge.classList.add('pop');
+    }
+
+    // ===== 自動儲存到後端（含去抖 400ms） =====
+    function saveQty(pid, qty) {
+      return fetch(API_UPDATE, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ pid, qty })
+      }).then(r => r.json()).then(j => {
+        if (!j.ok) throw new Error(j.error || 'save_failed');
+        return j;
+      });
+    }
+
+    function queueSave(tr, pid, qty) {
+      clearTimeout(tr._saveTimer);
+      tr._saveTimer = setTimeout(() => {
+        saveQty(pid, qty).then(() => {
+          updateCartBadge();
+        }).catch(err => {
+          console.error('儲存數量失敗：', err);
+        });
+      }, 400);
+    }
+
+    // 事件：數量 +/- 按鈕
     body.addEventListener('click', (e) => {
       const btn = e.target.closest('button');
       if (!btn) return;
@@ -106,39 +169,80 @@
       if (!tr) return;
 
       const qtyInput = tr.querySelector('.qty-input');
+      const pid = tr.querySelector('input[name="pid[]"]').value;
       let qty = parseInt(qtyInput.value, 10) || 1;
 
-      if (btn.classList.contains('btn-inc')) {
-        qtyInput.value = qty + 1;
-        recalcAll();
-      } else if (btn.classList.contains('btn-dec')) {
-        qtyInput.value = Math.max(1, qty - 1);
-        recalcAll();
-      }
+      if (btn.classList.contains('btn-inc')) qty = qty + 1;
+      if (btn.classList.contains('btn-dec')) qty = Math.max(1, qty - 1);
+
+      qtyInput.value = qty;
+      recalcAll();
+      queueSave(tr, pid, qty);
     });
 
+    // 事件：手動輸入數量（自動儲存）
     body.addEventListener('input', (e) => {
-      if (e.target.classList.contains('qty-input')) {
-        recalcAll();
-      }
+      if (!e.target.classList.contains('qty-input')) return;
+      const tr = e.target.closest('tr');
+      const pid = tr.querySelector('input[name="pid[]"]').value;
+      let qty = parseInt(e.target.value, 10) || 1;
+      if (qty < 1) qty = 1;
+      e.target.value = qty;
+      recalcAll();
+      queueSave(tr, pid, qty);
     });
 
+    // 勾選變動
     body.addEventListener('change', (e) => {
       if (e.target.classList.contains('item-check')) {
         recalcAll();
+        const items = [...body.querySelectorAll('.item-check')];
+        const checkAll = document.getElementById('checkAll');
+        if (checkAll) checkAll.checked = items.length > 0 && items.every(cb => cb.checked);
       }
     });
 
-    if (checkAll) {
-      checkAll.addEventListener('change', () => {
-        const checked = checkAll.checked;
-        body.querySelectorAll('.item-check').forEach(cb => cb.checked = checked);
-        recalcAll();
-      });
-    }
+    // 全選
+    checkAll?.addEventListener('change', () => {
+      const checked = checkAll.checked;
+      body.querySelectorAll('.item-check').forEach(cb => cb.checked = checked);
+      recalcAll();
+    });
 
-    // 首次載入計算
+    // 結帳：只提交勾選的 pid/qty
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    const checkoutForm = document.getElementById('checkoutForm');
+    checkoutBtn?.addEventListener('click', () => {
+      checkoutForm.querySelectorAll('input[type="hidden"]').forEach(i => i.remove());
+
+      let count = 0;
+      body.querySelectorAll('tr').forEach(tr => {
+        const checked = tr.querySelector('.item-check').checked;
+        if (!checked) return;
+        const pid = tr.querySelector('input[name="pid[]"]').value;
+        const qty = tr.querySelector('.qty-input').value;
+
+        const ip = document.createElement('input');
+        ip.type = 'hidden'; ip.name = 'pid[]'; ip.value = pid;
+        checkoutForm.appendChild(ip);
+
+        const iq = document.createElement('input');
+        iq.type = 'hidden'; iq.name = 'qty[]'; iq.value = qty;
+        checkoutForm.appendChild(iq);
+
+        count++;
+      });
+
+      if (count === 0) {
+        alert('請先勾選要結帳的商品');
+        return;
+      }
+      checkoutForm.submit();
+    });
+
+    // 初始計算
     recalcAll();
+    updateCartBadge(); // 讓徽章與頁面數量同步
   })();
 </script>
 {% endblock %}
