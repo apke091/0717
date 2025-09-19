@@ -1,249 +1,252 @@
 {% extends "base.html" %}
-{% block title %}教室租借{% endblock %}
+{% block title %}線上申請租借{% endblock %}
 
 {% block content %}
-<div class="container" style="margin-top: 90px">
-  <h1>教室租借資訊</h1>
-  <p>本會提供場地租借服務，適合小型課程與講座使用。</p>
-  <ul>
-      <li>【府前教室】</li>
-      <li>台南市中西區府前路一88號9樓</li>
-      <li>06-2228504</li>
-      <li>租借費用：$500/小時</li>
-  </ul>
-  <ul>
-      <li>【西門教室】</li>
-      <li>台南市北區西門路三段159號9樓5</li>
-      <li>06-2226607</li>
-      <li>租借費用：$500/小時</li>
-  </ul>
-  <p>請聯絡本會辦公室預約。</p>
+<style>
+  .rent-card { border:0; border-radius:18px; box-shadow:0 12px 30px rgba(83,70,186,.08); }
+  .rent-header{
+    border-bottom:0; padding:28px 28px 10px;
+    background:linear-gradient(135deg, rgba(131,93,255,.10), rgba(255,255,255,0));
+    border-top-left-radius:18px; border-top-right-radius:18px;
+  }
+  .rent-title{ font-weight:800; letter-spacing:.5px; }
+  .form-label{ font-weight:600; color:#3d3d53; }
+  .form-select,.form-control{ border-radius:12px; }
+  .form-select:focus,.form-control:focus{ box-shadow:0 0 0 .2rem rgba(131,93,255,.18); border-color:#835dff; }
+  .hint{ color:#6b6b82; font-size:.9rem; }
+  .btn-primary{ background:#835dff; border-color:#835dff; border-radius:12px; padding:.6rem 1.1rem; }
+  .btn-primary:hover{ background:#6f49ff; border-color:#6f49ff; }
+</style>
 
-  <hr>
-  <h2>線上申請租借</h2>
-  <!-- ✅ onsubmit 會檢查日期三欄是否完整 -->
-  <form method="POST" onsubmit="return validateDate();">
-    <div class="mb-3">
-      <label class="form-label">選擇場地</label>
-      <select class="form-select" name="location" id="location" required>
-        <option value="">請選擇</option>
-        <option value="府前教室">府前教室</option>
-        <option value="西門教室">西門教室</option>
-      </select>
-    </div>
+<div class="container-fluid" style="margin-top:90px;">
+  <div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
 
-    <!-- ✅ 三欄式日期（年 / 月 / 日） -->
-    <div class="mb-3">
-      <label class="form-label">租借日期</label>
-      <div class="row g-2">
-        <div class="col-4">
-          <select id="date_year" class="form-select">
-            <option value="">年</option>
-          </select>
+      <div class="card rent-card">
+        <div class="rent-header">
+          <h2 class="rent-title mb-1">線上申請租借</h2>
+          <div class="hint">選擇場地與日期後，系統會載入可用的租借時段。</div>
         </div>
-        <div class="col-4">
-          <select id="date_month" class="form-select" disabled>
-            <option value="">月</option>
-          </select>
-        </div>
-        <div class="col-4">
-          <select id="date_day" class="form-select" disabled>
-            <option value="">日</option>
-          </select>
+
+        <div class="card-body p-4 p-md-5">
+          <form method="POST" action="{{ url_for('rent') }}">
+            <!-- 場地 -->
+            <div class="mb-3">
+              <label class="form-label">選擇場地</label>
+              {% set locs = locations if locations is defined else ['府前教室','西門教室'] %}
+              <select id="location" name="location" class="form-select" required>
+                {% for loc in locs %}
+                  <option value="{{ loc }}">{{ loc }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- 租借日期 -->
+            <div class="mb-2">
+              <label class="form-label">租借日期</label>
+              <div class="d-flex gap-2">
+                <select id="yyyy" class="form-select" style="max-width:130px;"></select>
+                <select id="mm"   class="form-select" style="max-width:110px;"></select>
+                <select id="dd"   class="form-select" style="max-width:110px;"></select>
+              </div>
+              <div class="hint mt-1">只會顯示今天之後的月份與日期；已滿日期不會出現。</div>
+              <input type="hidden" id="date" name="date" required>
+            </div>
+
+            <!-- 租借時段 -->
+            <div class="mb-4">
+              <label class="form-label">租借時段</label>
+              <div class="position-relative">
+                <select id="time_slot" name="time_slot" class="form-select" required disabled>
+                  <option value="">請先選擇日期</option>
+                </select>
+                <div id="slotSpinner" class="position-absolute top-50 end-0 translate-middle-y me-3 d-none">
+                  <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 申請人資訊 -->
+            <div class="mb-3">
+              <label class="form-label">申請人</label>
+              <input name="name" class="form-control" placeholder="請輸入您的名字" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">電話</label>
+              <input name="phone" class="form-control" placeholder="請輸入聯絡電話" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Email（選填）</label>
+              <input name="email" type="email" class="form-control" placeholder="example@email.com">
+            </div>
+            <div class="mb-4">
+              <label class="form-label">備註（選填）</label>
+              <textarea name="note" rows="3" class="form-control" placeholder="有其他需求可在此說明"></textarea>
+            </div>
+
+            <div class="d-grid">
+              <button class="btn btn-primary" type="submit">送出申請</button>
+            </div>
+          </form>
         </div>
       </div>
-      <!-- 送到後端的實際欄位（YYYY-MM-DD） -->
-      <input type="hidden" name="date" id="date_hidden">
-      <div id="dateHelp" class="form-text">過去與「已滿」日期會自動不可選；選好年月日後會帶出可用時段。</div>
-    </div>
 
-    <div class="mb-3">
-      <label class="form-label">租借時段</label>
-      <select class="form-select" name="time_slot" id="time_slot" required disabled>
-        <option value="">請先選擇日期</option>
-      </select>
     </div>
-
-    <div class="mb-3">
-      <label class="form-label">聯絡人姓名</label>
-      <input type="text" class="form-control" name="name" required>
-    </div>
-
-    <div class="mb-3">
-      <label class="form-label">聯絡電話（手機）</label>
-      <input type="text" class="form-control" name="phone" pattern="09\d{8}" required>
-    </div>
-
-    <div class="mb-3">
-      <label class="form-label">電子郵件</label>
-      <input type="email" class="form-control" name="email" required>
-    </div>
-
-    <div class="mb-3">
-      <label class="form-label">備註</label>
-      <textarea class="form-control" name="note" rows="3"></textarea>
-    </div>
-
-    <button type="submit" class="btn btn-primary" id="submitBtn">送出申請</button>
-  </form>
+  </div>
+</div>
+<!-- 電話 -->
+<div class="mb-3">
+  <label class="form-label">電話</label>
+  <input name="phone" id="phone" class="form-control"
+         placeholder="09xx-xxx-xxx" required
+         inputmode="tel"
+         pattern="^09\d{2}-?\d{3}-?\d{3}$"
+         maxlength="13">
+  <div class="form-text">僅接受台灣手機：09xx-xxx-xxx（可不輸入連字號）。</div>
 </div>
 
-<!-- ✅ 純原生 JS：依「場地」取已滿日期、依「日期」取可用時段 -->
+<!-- Email（選填） -->
+<div class="mb-3">
+  <label class="form-label">Email（選填）</label>
+  <input name="email" id="email" type="email" class="form-control"
+         placeholder="name@example.com"
+         inputmode="email"
+         pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$">
+</div>
+
 <script>
-  // 抓元素
-  const $loc   = document.getElementById('location');
-  const $slot  = document.getElementById('time_slot');
-  const $y     = document.getElementById('date_year');
-  const $m     = document.getElementById('date_month');
-  const $d     = document.getElementById('date_day');
-  const $hid   = document.getElementById('date_hidden');
+document.addEventListener('DOMContentLoaded', async () => {
+  // ---- DOM ----
+  const yyyy = document.getElementById('yyyy');
+  const mm   = document.getElementById('mm');
+  const dd   = document.getElementById('dd');
+  const loc  = document.getElementById('location');
+  const hiddenDate = document.getElementById('date');
+  const slot = document.getElementById('time_slot');
+  const slotSpinner = document.getElementById('slotSpinner');
 
-  // 今天（從後端來，避免時區亂掉）
-  const TODAY_STR = "{{ now.strftime('%Y-%m-%d') }}";
-  const TODAY = new Date(TODAY_STR + "T00:00:00");
+  // ---- API ----
+  const API_TS       = "{{ url_for('api_rent_timeslots') }}";
+  const API_DISABLED = "{{ url_for('api_rent_disabled_dates') }}";
 
-  // 已滿日期（同日三時段皆滿）：'YYYY-MM-DD'
+  // ---- Utils ----
+  const today = new Date();
+  const TY = today.getFullYear(), TM = today.getMonth() + 1, TD = today.getDate();
+  const pad2 = n => String(n).padStart(2,'0');
+  const daysInMonth = (y, m) => new Date(y, m, 0).getDate();
+
+  // 整天已滿日期（後端計算）
   let disabledSet = new Set();
 
-  // 工具
-  const pad2 = n => String(n).padStart(2, '0');
-  const daysInMonth = (y, m) => new Date(y, m, 0).getDate(); // m=1..12
+  // 年：今年 ~ +2
+  for (let y = TY; y <= TY + 2; y++) yyyy.add(new Option(y, y));
 
-  function isPast(y, m, d) {
-    if (!y || !m || !d) return false;
-    const dt = new Date(`${y}-${pad2(m)}-${pad2(d)}T00:00:00`);
-    return dt < TODAY;
+  // 今年只顯示「本月以後」，未來年份顯示 1-12
+  function rebuildMonths() {
+    const y = parseInt(yyyy.value, 10);
+    mm.innerHTML = '';
+    const startM = (y === TY) ? TM : 1;
+    for (let m = startM; m <= 12; m++) mm.add(new Option(pad2(m), pad2(m)));
+    if (!mm.value && mm.options.length) mm.value = mm.options[0].value;
   }
 
-  // 依年份填月份（若為當年，只給 >= 今月）
-  function populateMonths() {
-    const y = parseInt($y.value, 10);
-    $m.innerHTML = '<option value="">月</option>';
-    $m.disabled = !y;
-    if (!y) return;
+  // 依年/月重建日期：同年同月只顯示「今天以後」；整天已滿的直接不渲染
+  function rebuildDays() {
+    const y = parseInt(yyyy.value, 10);
+    const m = parseInt(mm.value, 10);
+    dd.innerHTML = '';
+    if (!y || !m) return;
 
-    const startMonth = (y === TODAY.getFullYear()) ? (TODAY.getMonth() + 1) : 1;
-    for (let mm = startMonth; mm <= 12; mm++) {
-      $m.append(new Option(mm, mm));
-    }
-  }
-
-  // 依年/月填日；過去 & 已滿 → disabled
-  function populateDays() {
-    const y = parseInt($y.value, 10);
-    const m = parseInt($m.value, 10);
-    $d.innerHTML = '<option value="">日</option>';
-    $d.disabled = !(y && m);
-    if (!(y && m)) return;
-
+    const startD = (y === TY && m === TM) ? TD : 1;
     const dim = daysInMonth(y, m);
-    let hasSelectable = false;
-
-    for (let dd = 1; dd <= dim; dd++) {
-      const dateStr = `${y}-${pad2(m)}-${pad2(dd)}`;
-      const txt = disabledSet.has(dateStr) ? `${dd}（已滿）` : dd;
-      const opt = new Option(txt, dd);
-      if (isPast(y, m, dd) || disabledSet.has(dateStr)) {
-        opt.disabled = true;
-      } else {
-        hasSelectable = true;
-      }
-      $d.append(opt);
+    let first = '';
+    for (let d = startD; d <= dim; d++) {
+      const iso = `${y}-${pad2(m)}-${pad2(d)}`;
+      if (disabledSet.has(iso)) continue;  // 整天已滿 → 不顯示
+      const opt = new Option(pad2(d), pad2(d));
+      dd.add(opt);
+      if (!first) first = opt.value;
     }
-
-    if (!hasSelectable) {
-      const opt = new Option('（此年月無可選日期）', '');
-      opt.disabled = true;
-      $d.append(opt);
-    }
+    dd.value = first || '';
   }
 
-  // 年份：今年 ~ 明年（可自行調整）
-  function populateYears() {
-    const startY = TODAY.getFullYear();
-    const endY = startY + 1;
-    $y.innerHTML = '<option value="">年</option>';
-    for (let yy = startY; yy <= endY; yy++) {
-      $y.append(new Option(yy, yy));
-    }
-  }
-
-  // 寫入隱藏欄位 + 取可用時段
-  async function commitDateAndFetchSlots() {
-    const y = parseInt($y.value, 10);
-    const m = parseInt($m.value, 10);
-    const d = parseInt($d.value, 10);
-    if (!(y && m && d)) {
-      $hid.value = '';
-      $slot.innerHTML = '<option value="">請先選擇日期</option>';
-      $slot.disabled = true;
-      return;
-    }
-
-    const dateStr = `${y}-${pad2(m)}-${pad2(d)}`;
-    $hid.value = dateStr;
-
-    const loc = ($loc.value || '').trim();
-    if (!loc) {
-      $slot.innerHTML = '<option value="">請先選擇場地</option>';
-      $slot.disabled = true;
-      return;
-    }
-
-    const res = await fetch(`/api/rent/available_slots?location=${encodeURIComponent(loc)}&date=${encodeURIComponent(dateStr)}`);
-    const data = await res.json();
-    const available = data.available || [];
-
-    $slot.innerHTML = '';
-    if (available.length === 0) {
-      $slot.append(new Option('（此日無可用時段，請換日期）', ''));
-      $slot.disabled = true;
-    } else {
-      $slot.append(new Option('請選擇', ''));
-      for (const s of available) $slot.append(new Option(s, s));
-      $slot.disabled = false;
-    }
-  }
-
-  // 場地改變 → 重抓滿額日、重建月份/日期
-  async function refreshDisabledDates() {
-    const loc = ($loc.value || '').trim();
+  async function fetchDisabledDates() {
     disabledSet = new Set();
-    if (loc) {
-      const res = await fetch(`/api/rent/disabled_dates?location=${encodeURIComponent(loc)}`);
-      const data = await res.json();
-      (data.disabled_dates || []).forEach(d => disabledSet.add(d));
-    }
-    populateMonths();
-    populateDays();
-    // 變更場地時清掉已選日與時段
-    $d.value = '';
-    $hid.value = '';
-    $slot.innerHTML = '<option value="">請先選擇日期</option>';
-    $slot.disabled = true;
+    const l = (loc.value || '').trim();
+    if (!l) return;
+    try {
+      const r = await fetch(`${API_DISABLED}?location=${encodeURIComponent(l)}`);
+      const data = await r.json();
+      (data.disabled_dates || []).forEach(iso => disabledSet.add(iso));
+    } catch { /* ignore */ }
   }
 
-  // 表單送出前檢查（hidden 不會被瀏覽器 required 驗證）
-  function validateDate() {
-    if (!$hid.value) {
-      alert('請先選擇完整的租借日期（年 / 月 / 日）');
-      return false;
+  function setSlot(msg, enabled) {
+    slot.innerHTML = '';
+    slot.add(new Option(msg, ''));
+    slot.disabled = !enabled;
+  }
+  function showSpinner(on){ slotSpinner.classList.toggle('d-none', !on); }
+
+  async function loadTimeSlots() {
+    const y = parseInt(yyyy.value, 10);
+    const m = parseInt(mm.value, 10);
+    const d = parseInt(dd.value, 10);
+    const l = (loc.value || '').trim();
+
+    if (!(y && m && d && l)) { setSlot('請先選擇日期', false); return; }
+
+    const iso = `${y}-${pad2(m)}-${pad2(d)}`;
+    hiddenDate.value = iso;
+
+    setSlot('載入中…', false); showSpinner(true);
+    try {
+      const r = await fetch(`${API_TS}?location=${encodeURIComponent(l)}&date=${encodeURIComponent(iso)}`);
+      const data = await r.json();
+      const arr = Array.isArray(data.available) ? data.available : [];
+
+      slot.innerHTML = '';
+      if (!arr.length) {
+        slot.add(new Option('此日無可用時段', ''));
+        slot.disabled = true;
+      } else {
+        slot.add(new Option('請選擇時段', ''));
+        arr.forEach(s => slot.add(new Option(s.label || s, s.id || s)));
+        slot.disabled = false;
+      }
+    } catch {
+      setSlot('載入時段失敗', false);
+    } finally {
+      showSpinner(false);
     }
-    if (!$slot.value) {
-      alert('請選擇租借時段');
-      return false;
-    }
-    return true;
   }
 
-  // 綁定事件
-  $y.addEventListener('change', () => { populateMonths(); populateDays(); commitDateAndFetchSlots(); });
-  $m.addEventListener('change', () => { populateDays(); commitDateAndFetchSlots(); });
-  $d.addEventListener('change', commitDateAndFetchSlots);
-  $loc.addEventListener('change', refreshDisabledDates);
+  // ---- 初始化（需要 await，所以整個 handler 是 async）----
+  yyyy.value = TY;
+  rebuildMonths();
+  await fetchDisabledDates();
+  rebuildDays();
+  await loadTimeSlots();
 
-  // 初始化
-  populateYears();
-  refreshDisabledDates();
+  // ---- 事件 ----
+  yyyy.addEventListener('change', async () => { rebuildMonths(); await fetchDisabledDates(); rebuildDays(); loadTimeSlots(); });
+  mm.addEventListener('change', () => { rebuildDays(); loadTimeSlots(); });
+  dd.addEventListener('change', loadTimeSlots);
+  loc.addEventListener('change', async () => { await fetchDisabledDates(); rebuildDays(); loadTimeSlots(); });
+});
+    const phoneInput = document.getElementById('phone');
+if (phoneInput) {
+  phoneInput.addEventListener('input', (e) => {
+    const v = e.target.value.replace(/\D/g, '').slice(0, 10); // 只留 10 碼
+    if (v.length >= 7) {
+      e.target.value = v.replace(/^(\d{4})(\d{3})(\d{0,3}).*$/, (_, a, b, c) => c ? `${a}-${b}-${c}` : `${a}-${b}`);
+    } else if (v.length >= 4) {
+      e.target.value = v.replace(/^(\d{4})(\d{0,3}).*$/, (_, a, b) => `${a}-${b}`);
+    } else {
+      e.target.value = v;
+    }
+  });
+}
+
 </script>
 {% endblock %}

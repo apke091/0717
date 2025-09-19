@@ -27,7 +27,11 @@
 
     <div class="mb-3">
       <label class="form-label">電子信箱</label>
-      <input type="email" name="email" class="form-control" placeholder="請輸入您的信箱" required>
+     <input name="email" type="email" class="form-control"
+       placeholder="name@example.com" required
+       inputmode="email"
+       pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$">
+
     </div>
 
     <div class="mb-3">

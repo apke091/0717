@@ -89,8 +89,11 @@ def init_db():
     cur.execute("""
     CREATE TABLE IF NOT EXISTS downloads (
         id SERIAL PRIMARY KEY,
-        filename TEXT NOT NULL,
         title TEXT NOT NULL,
+        filename TEXT NOT NULL,          -- 實際存到磁碟上的檔名（避免碰撞）
+        original_name TEXT NOT NULL,     -- 使用者上傳的原始檔名（列表顯示用）
+        mime TEXT,
+        size_bigint BIGINT,
         uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """)

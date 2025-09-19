@@ -7,10 +7,16 @@ from psycopg2.extras import RealDictCursor
 from functools import wraps
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+import uuid, mimetypes
+from werkzeug.utils import secure_filename
+from flask import send_file, abort
 
 import random
 load_dotenv()
 
+# 驗證規則（台灣手機 & 一般 Email）
+PHONE_RE = re.compile(r'^09\d{2}-?\d{3}-?\d{3}$')       # 09xx-xxx-xxx 或 09xxxxxxxxx
+EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')    # 簡化 RFC，夠用且穩定
 
 
 
@@ -38,6 +44,25 @@ def get_db_connection():
         cursor_factory=RealDictCursor
     )
     return conn
+
+# 下載專區：實體檔案目錄
+FILES_DIR = os.path.join(app.root_path, "static", "files")
+os.makedirs(FILES_DIR, exist_ok=True)
+
+def ensure_downloads_table():
+    """確保 downloads 資料表存在（id/title/filename/uploaded_at）"""
+    conn = get_db_connection()
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS downloads (
+                    id SERIAL PRIMARY KEY,
+                    filename TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+    conn.close()
 
 # 從資料庫載入商品資料
 
@@ -89,6 +114,28 @@ def ensure_about_row(conn):
             cur.execute("INSERT INTO about_page (id, content) VALUES (1, '');")
         conn.commit()
 
+def gen_three_hour_slots(start_hour=9, end_hour=21, step=3):
+    """產生每 3 小時一個區段，例如 09:00–12:00 ... 18:00–21:00"""
+    slots = []
+    h = start_hour
+    while h < end_hour:
+        hh1 = f"{h:02d}:00"
+        hh2 = f"{h+step:02d}:00"
+        label = f"{hh1}–{hh2}"
+        # id 與 label 同步，直接存這段字串最簡單
+        slots.append((label, label))
+        h += step
+    return slots
+
+def get_rent_time_slots():
+    # 全站統一使用 en dash（–）
+    return [
+        ("09:00–12:00", "09:00–12:00"),
+        ("13:00–16:00", "13:00–16:00"),
+        ("18:00–21:00", "18:00–21:00"),
+    ]
+
+
 # app.secret_key = '9OG80KJiLKjfFowu4lqiMEo_Hv3r1EVGzvcP6MR2Av0'
 
 # 管理員權限驗證
@@ -110,17 +157,23 @@ def delete_expired_rent_requests():
     cur.execute("""
         DELETE FROM rent_requests
         WHERE status = 'approved'
-        AND (
-            (date < %s)
+          AND (
+            date < %s
             OR (date = %s AND (
-                (time_slot = '09:00–12:00' AND %s >= '12:00')
-                OR (time_slot = '13:00-16:00' AND %s >= '16:00')
-                OR (time_slot = '18:00–21:00' AND %s >= '21:00')
+                  (time_slot = '09:00–12:00' AND %s >= '12:00')
+               OR (time_slot = '12:00–15:00' AND %s >= '15:00')
+               OR (time_slot = '15:00–18:00' AND %s >= '18:00')
+               OR (time_slot = '18:00–21:00' AND %s >= '21:00')
             ))
-        )
-    """, (now.date(), now.date(), now.strftime('%H:%M'), now.strftime('%H:%M'), now.strftime('%H:%M')))
+          )
+    """, (now.date(), now.date(),
+          now.strftime('%H:%M'),
+          now.strftime('%H:%M'),
+          now.strftime('%H:%M'),
+          now.strftime('%H:%M')))
     conn.commit()
     conn.close()
+
 
 # @app.route("/test")
 # def test():
@@ -185,6 +238,10 @@ def contact():
         if str(session.get("captcha_answer")) != str(answer).strip():
             flash("⚠️ 驗證碼錯誤，請再試一次", "danger")
             return redirect(url_for("contact"))
+        # Email 格式驗證
+        if not EMAIL_RE.match(email or ""):
+            flash("❌ Email 格式不正確，請重新輸入", "danger")
+            return redirect(url_for("contact"))
 
         # 寫進 contact_messages
         try:
@@ -225,40 +282,132 @@ def contact():
     session["captcha_answer"] = str(a + b)
     return render_template("contact.html", captcha_question=f"{a} + {b} = ?")
 
+
 @app.route("/download")
 def downloads():
+    ensure_downloads_table()
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute("SELECT * FROM downloads ORDER BY uploaded_at DESC")
+    cur.execute("""
+        SELECT id, filename, title, uploaded_at
+        FROM downloads
+        ORDER BY uploaded_at DESC, id DESC
+    """)
     file_list = cur.fetchall()
     conn.close()
+
+    # 產生靜態網址與友善下載檔名
+    for row in file_list:
+        ext = os.path.splitext(row["filename"])[1]
+        row["static_url"] = url_for("static", filename=f"files/{row['filename']}")
+        row["download_name"] = f"{row['title']}{ext}"   # e.g. 標題.pdf
+
     return render_template("download.html", file_list=file_list)
+
+# ====== 下載專區：實際提供下載 ======
+@app.route("/download/file/<int:file_id>")
+def download_file(file_id):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT filename, title FROM downloads WHERE id=%s", (file_id,))
+    row = cur.fetchone()
+    conn.close()
+
+    if not row:
+        abort(404)
+
+    filename = row["filename"]
+
+    # 防止路徑跳脫
+    if os.path.sep in filename or (os.path.altsep and os.path.altsep in filename):
+        abort(400)
+
+    file_path = os.path.join(FILES_DIR, filename)
+    if not os.path.isfile(file_path):
+        abort(404)
+
+    ext = os.path.splitext(filename)[1]
+    download_name = f"{row['title']}{ext}"
+    guessed = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+
+    # ✅ 用絕對路徑送檔案，瀏覽器不管能不能預覽都會觸發下載
+    return send_file(
+        file_path,
+        as_attachment=True,
+        download_name=download_name,
+        mimetype=guessed
+    )
+
+
+# ====== 下載專區：刪除（硬碟 + DB） ======
+@app.route("/download/delete/<int:file_id>", methods=["POST"])
+@admin_required
+def delete_download(file_id):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT filename FROM downloads WHERE id=%s", (file_id,))
+    row = cur.fetchone()
+    if not row:
+        conn.close()
+        flash("檔案不存在或已被刪除")
+        return redirect(url_for("downloads"))
+
+    file_path = os.path.join(FILES_DIR, row["filename"])
+    fs_err = None
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except Exception as e:
+            fs_err = str(e)
+
+    cur.execute("DELETE FROM downloads WHERE id=%s", (file_id,))
+    conn.commit()
+    conn.close()
+
+    if fs_err:
+        flash("已刪除資料庫紀錄，但刪檔時發生問題：" + fs_err, "warning")
+    else:
+        flash("🗑️ 檔案已刪除", "success")
+    return redirect(url_for("downloads"))
+
 
 @app.route("/upload_file", methods=["GET", "POST"])
 @admin_required
 def upload_file():
+    ensure_downloads_table()
     if request.method == "POST":
         file = request.files.get("file")
-        title = request.form.get("title")
-
+        title = (request.form.get("title") or "").strip()
         if not file or not file.filename or not title:
             flash("❌ 檔案與標題都必填")
             return redirect(url_for("upload_file"))
 
-        save_path = os.path.join("static", "files", file.filename)
-        file.save(save_path)
+        original = secure_filename(file.filename)
+        ext = os.path.splitext(original)[1]
+        unique = f"{uuid.uuid4().hex}{ext}"
+        save_path = os.path.join(FILES_DIR, unique)
 
-        # 寫入資料表
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("INSERT INTO downloads (filename, title) VALUES (%s, %s)", (file.filename, title))
-        conn.commit()
-        conn.close()
-
-        flash("✅ 上傳成功")
-        return redirect(url_for("upload_file"))
+        try:
+            file.save(save_path)
+            conn = get_db_connection()
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "INSERT INTO downloads (filename, title) VALUES (%s, %s)",
+                        (unique, title)
+                    )
+            conn.close()
+            flash("✅ 上傳成功")
+            return redirect(url_for("downloads"))
+        except Exception as e:
+            if os.path.exists(save_path):
+                try: os.remove(save_path)
+                except: pass
+            flash("❌ 上傳失敗：" + str(e))
+            return redirect(url_for("upload_file"))
 
     return render_template("upload_file.html")
+
 
 @app.route("/news")
 def news():
@@ -268,8 +417,8 @@ def news():
 def rent():
     if request.method == "POST":
         location = request.form.get("location")
-        date = request.form.get("date")
-        time_slot = request.form.get("time_slot")
+        date = request.form.get("date")              # YYYY-MM-DD
+        time_slot = request.form.get("time_slot")    # 例如 "09:00–12:00"
         name = request.form.get("name")
         phone = request.form.get("phone")
         email = request.form.get("email")
@@ -282,23 +431,47 @@ def rent():
             flash("❌ 不能選擇今天以前的日期")
             return redirect(url_for("rent"))
 
-        # 檢查是否已有相同場地+日期+時段 且已核准的紀錄
+        # ✅【新增】電話/Email 格式驗證（在這裡）
+        # PHONE_RE、EMAIL_RE 已在檔案上方宣告
+        if not PHONE_RE.match(phone or ""):
+            flash("❌ 電話格式錯誤，請輸入 09xx-xxx-xxx（可不輸入連字號）")
+            return redirect(url_for("rent"))
+
+        if email and not EMAIL_RE.match(email):
+            flash("❌ Email 格式不正確，請重新輸入")
+            return redirect(url_for("rent"))
+
+        # ✅【新增】電話統一存成 09xx-xxx-xxx
+        digits = re.sub(r"\D", "", phone)[:10]  # 只留前 10 碼
+        if len(digits) != 10:
+            flash("❌ 電話需為 10 碼手機號碼（09xx-xxx-xxx）")
+            return redirect(url_for("rent"))
+        phone = f"{digits[:4]}-{digits[4:7]}-{digits[7:]}"
+
+        # 檢查是否已有相同場地+日期+時段（pending/approved 都視為占用）
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute(
-            "SELECT * FROM rent_requests WHERE location=%s AND date=%s AND time_slot=%s AND status='approved'",
+            """
+            SELECT 1
+            FROM rent_requests
+            WHERE location=%s AND date=%s AND time_slot=%s
+              AND status IN ('pending','approved')
+            """,
             (location, date, time_slot)
         )
-        existing = cur.fetchone()
-        if existing:
+        if cur.fetchone():
             conn.close()
             flash("❌ 此時段已被預約")
             return redirect(url_for("rent"))
 
-        # 寫入資料庫（包含 email 欄位）
+        # 寫入資料庫（預設狀態 pending）
         cur.execute(
-            "INSERT INTO rent_requests (location, date, time_slot, name, phone, email, note, status, submitted_at) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())",
+            """
+            INSERT INTO rent_requests
+                (location, date, time_slot, name, phone, email, note, status, submitted_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
+            """,
             (location, date, time_slot, name, phone, email, note, 'pending')
         )
         conn.commit()
@@ -307,8 +480,81 @@ def rent():
         flash("✅ 已送出申請，請等待審核")
         return redirect(url_for("rent"))
 
-    # 傳入今天的日期限制 HTML 選項
+    # GET
     return render_template("rent.html", now=datetime.now())
+
+@app.route("/api/rent/disabled_dates", methods=["GET"])
+def api_rent_disabled_dates():
+    location = (request.args.get("location") or "").strip()
+    if not location:
+        return jsonify({"disabled_dates": []})
+
+    total_slots_per_day = 3  # 09–12 / 13–16 / 18–21
+
+    conn = get_db_connection()
+    cur = conn.cursor()  # 這裡會拿到 RealDictCursor（因為你在 connection 已設定）
+    cur.execute("""
+        SELECT date, COUNT(DISTINCT time_slot) AS cnt
+        FROM rent_requests
+        WHERE location=%s
+          AND status IN ('pending','approved')
+        GROUP BY date
+        HAVING COUNT(DISTINCT time_slot) >= %s
+        ORDER BY date
+    """, (location, total_slots_per_day))
+    rows = cur.fetchall()
+    conn.close()
+
+    disabled = [r["date"].strftime("%Y-%m-%d") for r in rows]
+    return jsonify({"disabled_dates": disabled})
+
+@app.route("/api/rent/timeslots", methods=["GET"])
+def api_rent_timeslots():
+    """
+    GET /api/rent/timeslots?date=YYYY-MM-DD&location=府前教室
+    回傳: {"available":[{"id":"09:00–12:00","label":"09:00–12:00"}, ...]}
+    """
+    location = (request.args.get("location") or "").strip()
+    date_str = (request.args.get("date") or "").strip()
+
+    if not location or not date_str:
+        return jsonify({"available": []})
+
+    # 驗證日期
+    try:
+        d = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        return jsonify({"error": "bad date"}), 400
+
+    # 過去日期沒有可選
+    if d < datetime.now().date():
+        return jsonify({"available": []})
+
+    # 全部候選時段（改成 3 段）
+    all_slots = get_rent_time_slots()
+
+    # 查這天這個場地已被占用（pending/approved 都算）
+    conn = get_db_connection()
+    cur = conn.cursor()  # RealDictCursor
+    cur.execute("""
+        SELECT time_slot
+        FROM rent_requests
+        WHERE location=%s AND date=%s
+          AND status IN ('pending','approved')
+    """, (location, date_str))
+    rows = cur.fetchall()
+    conn.close()
+
+    booked = {r["time_slot"] for r in rows}  # ⚠️ RealDictRow 用欄位名取值
+
+    remaining = [
+        {"id": slot_id, "label": label}
+        for (slot_id, label) in all_slots
+        if slot_id not in booked
+    ]
+
+    return jsonify({"available": remaining})
+
 
 @app.route("/manage_rents", methods=["GET", "POST"])
 @admin_required
@@ -854,6 +1100,7 @@ def video_gallery():
     os.makedirs(folder, exist_ok=True)
     videos = [f for f in os.listdir(folder) if f.endswith(".mp4")]
     return render_template("video.html", videos=videos)
+
 
 @app.context_processor
 def inject_cart_count():
