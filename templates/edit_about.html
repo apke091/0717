@@ -19,9 +19,9 @@
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 
-<!-- 字型選單顯示名稱 + 字級 class 對應 -->
+<!-- 字型 + 字級 CSS -->
 <style>
-  /* 字型下拉顯示人類可讀名稱 */
+  /* 顯示字型名稱 */
   .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="noto-sans"]::before,
   .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="noto-sans"]::before { content: "Noto Sans"; }
   .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="jhenghei"]::before,
@@ -31,7 +31,7 @@
   .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="ming"]::before,
   .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="ming"]::before { content: "新細明體"; }
 
-/* 這段可以放 base.html 或 style.css，讓任何頁面都能吃到 */
+  /* 字級 */
   .ql-size-12px { font-size: 12px; }
   .ql-size-14px { font-size: 14px; }
   .ql-size-16px { font-size: 16px; }
@@ -40,33 +40,42 @@
   .ql-size-24px { font-size: 24px; }
   .ql-size-28px { font-size: 28px; }
   .ql-size-32px { font-size: 32px; }
+  .ql-size-36px { font-size: 36px; }
+  .ql-size-48px { font-size: 48px; }
 
-   /* 讓「字級」下拉選單顯示數字，而不是全部 Normal */
-  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before,
-  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="12px"]::before { content: "12px"; }
+  /* 讓「字級」選單顯示數字，而不是 Normal */
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="12px"]::before { content: "12px"; }
 
-  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="14px"]::before,
-  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="14px"]::before { content: "14px"; }
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="14px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="14px"]::before { content: "14px"; }
 
-  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="16px"]::before,
-  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="16px"]::before { content: "16px"; }
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="16px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="16px"]::before { content: "16px"; }
 
-  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="18px"]::before,
-  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="18px"]::before { content: "18px"; }
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="18px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="18px"]::before { content: "18px"; }
 
-  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="20px"]::before,
-  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="20px"]::before { content: "20px"; }
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="20px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="20px"]::before { content: "20px"; }
 
-  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before,
-  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before { content: "24px"; }
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before { content: "24px"; }
 
-  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="28px"]::before,
-  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="28px"]::before { content: "28px"; }
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="28px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="28px"]::before { content: "28px"; }
 
-  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="32px"]::before,
-  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="32px"]::before { content: "32px"; }
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="32px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="32px"]::before { content: "32px"; }
 
-   /* 套用各字型 */
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="36px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="36px"]::before { content: "36px"; }
+
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="48px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="48px"]::before { content: "48px"; }
+
+
+  /* 字型 */
   .ql-font-noto-sans { font-family: 'Noto Sans TC','Microsoft JhengHei',sans-serif; }
   .ql-font-jhenghei  { font-family: 'Microsoft JhengHei','微軟正黑體',sans-serif; }
   .ql-font-kai       { font-family: 'DFKai-SB','標楷體',serif; }
@@ -77,30 +86,29 @@
 </style>
 
 <script>
-  // 字型：class-based
+  // Quill 字型 & 字級
   const Font = Quill.import('formats/font');
   Font.whitelist = ['noto-sans','jhenghei','kai','ming','serif','sans-serif','monospace'];
   Quill.register(Font, true);
 
-  // 字級：class-based（用自定義 px 值）
   const Size = Quill.import('attributors/class/size');
-  Size.whitelist = ['12px','14px','16px','18px','20px','24px','28px','32px'];
+  Size.whitelist = ['12px','14px','16px','18px','20px','24px','28px','32px','36px','48px'];
   Quill.register(Size, true);
 
   const quill = new Quill('#quill-editor', {
     theme: 'snow',
     modules: {
       toolbar: [
-        [{ font: Font.whitelist }],
-        [{ size: Size.whitelist }],
+        [{ font: Font.whitelist }, { size: Size.whitelist }],
         ['bold','italic','underline'],
+        [{ color: [] }, { background: [] }],   // ✅ 顏色 & 背景色
         [{ align: [] }],
         [{ list: 'ordered' }, { list: 'bullet' }],
         ['link','image'],
         ['clean']
       ]
     },
-    formats: ['font','size','bold','italic','underline','align','list','bullet','link','image']
+    formats: ['font','size','color','background','bold','italic','underline','align','list','bullet','link','image']
   });
 
   // 載入既有內容

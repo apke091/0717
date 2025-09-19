@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, make_response
 from flask_mail import Mail, Message
 import os
 import re
@@ -6,7 +6,8 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from functools import wraps
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
+
 import random
 load_dotenv()
 
@@ -14,6 +15,8 @@ load_dotenv()
 
 
 app = Flask(__name__)
+app.secret_key = "9OG80KJiLKjfFowu4lqiMEo_Hv3r1EVGzvcP6MR2Av0"  # 建議換成隨機字串
+app.permanent_session_lifetime = timedelta(days=7)     # 登入有效時間 7 天
 
 # 設定 mail
 app.config['MAIL_SERVER'] = os.environ.get("MAIL_SERVER")
@@ -52,6 +55,24 @@ def load_products_from_db():
         }
     return products
 
+# ✅ 自動刷新 session，讓有操作的人不會被登出
+@app.before_request
+def refresh_session():
+    if session.get("username"):
+        session.permanent = True
+
+# 禁止快取的 decorator
+def nocache(view):
+    @wraps(view)
+    def _wrapped(*args, **kwargs):
+        resp = make_response(view(*args, **kwargs))
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0, private"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
+    return _wrapped
+
+
 def ensure_about_row(conn):
     with conn.cursor() as cur:
         # 建表（若尚未建）
@@ -67,8 +88,8 @@ def ensure_about_row(conn):
         if not row:
             cur.execute("INSERT INTO about_page (id, content) VALUES (1, '');")
         conn.commit()
-# app = Flask(__name__)
-app.secret_key = 'your-secret-key'
+
+# app.secret_key = '9OG80KJiLKjfFowu4lqiMEo_Hv3r1EVGzvcP6MR2Av0'
 
 # 管理員權限驗證
 
@@ -107,6 +128,7 @@ def delete_expired_rent_requests():
 
 
 @app.route("/")
+@nocache
 def index():
     return render_template("index.html")
 
@@ -606,29 +628,50 @@ def api_cart_qty():
         if conn:
             conn.close()
 
+@app.after_request
+def add_no_cache_headers(resp):
+    ctype = resp.headers.get("Content-Type", "")
+    # 只處理 HTML（避免影響靜態檔案快取）
+    if ctype.startswith("text/html"):
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0, private"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        # 讓代理快取知道內容會依 Cookie（登入）不同
+        resp.headers["Vary"] = "Cookie"
+    return resp
 
 @app.route("/login", methods=["GET", "POST"])
+@nocache
 def login():
+    # ✅ 已登入者，不准再進 login 頁面
+    if session.get("username"):
+        return redirect(url_for("index"))
+
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
+
         conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor = conn.cursor()
         cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
         user = cursor.fetchone()
         conn.close()
+
         if user and user["password"] == password:
             session["username"] = user["username"]
             session["role"] = user["role"]
+            session.permanent = True   # ✅ 登入後設成永久
             flash("登入成功")
             return redirect(url_for("index"))
         else:
             flash("帳號或密碼錯誤")
+
     return render_template("login.html")
 
 @app.route("/logout")
+@nocache
 def logout():
-    cart = session.get("cart")
+    cart = session.get("cart")  # 如果要保留購物車
     session.clear()
     session["cart"] = cart or {}
     flash("已登出")
@@ -658,62 +701,119 @@ def manage_users():
     return render_template("manage_users.html", users=users)
 
 @app.route("/register", methods=["GET", "POST"])
+@nocache
 def register():
+    # 已登入者不需再註冊，直接回首頁
+    if session.get("username"):
+        return redirect(url_for("index"))
+
     if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
-        confirm = request.form.get("confirm")
-        conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
-        existing_user = cursor.fetchone()
-        if existing_user:
-            flash("帳號已存在")
-        elif password != confirm:
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        confirm  = request.form.get("confirm", "")
+
+        if not username or not password or not confirm:
+            flash("所有欄位都必填")
+            return render_template("register.html")
+
+        # 密碼規則：6~15 字，且同時含英文字母與數字
+        if not re.fullmatch(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,15}$', password):
+            flash("密碼須同時包含英文與數字，且長度為 6～15 字")
+            return render_template("register.html")
+
+        if password != confirm:
             flash("密碼與確認不一致")
-        elif not re.match(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,15}$', password):
-            flash("密碼須含英文與數字，且長度為 6～15 字")
-        else:
-            cursor.execute("INSERT INTO users (username, password, role) VALUES (%s, %s, %s)",
-                           (username, password, "member"))
+            return render_template("register.html")
+
+        conn = get_db_connection()
+        try:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            # 檢查帳號是否存在
+            cur.execute("SELECT 1 FROM users WHERE username = %s", (username,))
+            exists = cur.fetchone()
+            if exists:
+                flash("帳號已存在")
+                return render_template("register.html")
+
+            # 建立帳號（此版本沿用你的純文字密碼儲存）
+            cur.execute(
+                "INSERT INTO users (username, password, role) VALUES (%s, %s, %s)",
+                (username, password, "member")
+            )
             conn.commit()
+
+            # 註冊後自動登入並保持登入狀態
             session["username"] = username
             session["role"] = "member"
+            session.permanent = True
             flash("註冊成功，歡迎加入！")
-            conn.close()
             return redirect(url_for("index"))
-        conn.close()
+
+        except Exception as e:
+            conn.rollback()
+            flash(f"註冊失敗：{e}")
+            return render_template("register.html")
+        finally:
+            conn.close()
+
+    # GET
     return render_template("register.html")
 
 @app.route("/change_password", methods=["GET", "POST"])
+@nocache
 def change_password():
     username = session.get("username")
     if not username:
         flash("請先登入")
         return redirect(url_for("login"))
+
     if request.method == "POST":
-        old = request.form.get("old_password")
-        new = request.form.get("new_password")
-        confirm = request.form.get("confirm_password")
-        conn = get_db_connection()
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-        cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
-        user = cursor.fetchone()
-        if not user:
-            flash("找不到使用者")
-        elif user["password"] != old:
-            flash("舊密碼錯誤")
-        elif new != confirm:
+        old     = request.form.get("old_password", "")
+        new     = request.form.get("new_password", "")
+        confirm = request.form.get("confirm_password", "")
+
+        if not old or not new or not confirm:
+            flash("所有欄位都必填")
+            return render_template("change_password.html")
+
+        if new != confirm:
             flash("新密碼與確認不一致")
-        elif not re.fullmatch(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,15}$', new):
-            flash("新密碼須包含英文與數字，且長度為 6～15 字")
-        else:
-            cursor.execute("UPDATE users SET password = %s WHERE username = %s", (new, username))
+            return render_template("change_password.html")
+
+        # 密碼規則：6~15 字，且同時含英文字母與數字
+        if not re.fullmatch(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,15}$', new):
+            flash("新密碼須同時包含英文與數字，且長度為 6～15 字")
+            return render_template("change_password.html")
+
+        conn = get_db_connection()
+        try:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute("SELECT password FROM users WHERE username = %s", (username,))
+            user = cur.fetchone()
+            if not user:
+                flash("找不到使用者")
+                return render_template("change_password.html")
+
+            if user["password"] != old:
+                flash("舊密碼錯誤")
+                return render_template("change_password.html")
+
+            cur.execute("UPDATE users SET password = %s WHERE username = %s", (new, username))
             conn.commit()
+
+            # 保持登入狀態（可續用）
+            session.permanent = True
             flash("密碼已更新")
-            conn.close()
             return redirect(url_for("index"))
-        conn.close()
+
+        except Exception as e:
+            conn.rollback()
+            flash(f"更新失敗：{e}")
+            return render_template("change_password.html")
+        finally:
+            conn.close()
+
+    # GET
     return render_template("change_password.html")
 
 @app.route("/upload", methods=["GET", "POST"])

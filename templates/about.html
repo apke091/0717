@@ -1,47 +1,41 @@
 {% extends "base.html" %}
 {% block title %}關於我們{% endblock %}
 {% block content %}
-<div class="container" style="margin-top: 90px">
-    {% if content.strip() %}
-        {{ content | safe }}
-    {% else %}
-        <div class="alert alert-info">
-            目前尚未新增「關於我們」的內容，請管理員點選下方按鈕進行編輯。
-        </div>
-    {% endif %}
-<!-- 字型選單顯示名稱 + 字級 class 對應 -->
-<style>
-  /* 字型下拉顯示人類可讀名稱 */
-  .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="noto-sans"]::before,
-  .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="noto-sans"]::before { content: "Noto Sans"; }
-  .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="jhenghei"]::before,
-  .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="jhenghei"]::before { content: "微軟正黑體"; }
-  .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="kai"]::before,
-  .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="kai"]::before { content: "標楷體"; }
-  .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="ming"]::before,
-  .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="ming"]::before { content: "新細明體"; }
+<div class="container" style="margin-top: 90px; max-width: 920px;">
+  {% if content.strip() %}
+    <div class="p-3" style="background:#fff; border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,.06);">
+      {{ content | safe }}
+    </div>
+  {% else %}
+    <div class="alert alert-info">
+      目前尚未新增「關於我們」的內容，請管理員點選下方按鈕進行編輯。
+    </div>
+  {% endif %}
 
-  /* 字級（class-based）— 編輯器內立即生效 */
-  .ql-editor .ql-size-12px { font-size: 12px; }
-  .ql-editor .ql-size-14px { font-size: 14px; }
-  .ql-editor .ql-size-16px { font-size: 16px; }
-  .ql-editor .ql-size-18px { font-size: 18px; }
-  .ql-editor .ql-size-20px { font-size: 20px; }
-  .ql-editor .ql-size-24px { font-size: 24px; }
-  .ql-editor .ql-size-28px { font-size: 28px; }
-  .ql-editor .ql-size-32px { font-size: 32px; }
+  <!-- 前台也要吃到 Quill 的 class 定義 -->
+  <style>
+    .ql-size-12px { font-size: 12px; }
+    .ql-size-14px { font-size: 14px; }
+    .ql-size-16px { font-size: 16px; }
+    .ql-size-18px { font-size: 18px; }
+    .ql-size-20px { font-size: 20px; }
+    .ql-size-24px { font-size: 24px; }
+    .ql-size-28px { font-size: 28px; }
+    .ql-size-32px { font-size: 32px; }
+    .ql-size-36px { font-size: 36px; }
+    .ql-size-48px { font-size: 48px; }
 
-  /* 套用各字型 */
-  .ql-font-noto-sans { font-family: 'Noto Sans TC','Microsoft JhengHei',sans-serif; }
-  .ql-font-jhenghei  { font-family: 'Microsoft JhengHei','微軟正黑體',sans-serif; }
-  .ql-font-kai       { font-family: 'DFKai-SB','標楷體',serif; }
-  .ql-font-ming      { font-family: 'PMingLiU','新細明體',serif; }
-  .ql-font-serif     { font-family: serif; }
-  .ql-font-sans-serif{ font-family: sans-serif; }
-  .ql-font-monospace { font-family: monospace; }
-</style>
-    {% if session.get("role") == "admin" %}
-        <a href="{{ url_for('edit_about') }}" class="btn btn-primary mt-3">✏️ 編輯內容</a>
-    {% endif %}
+    .ql-font-noto-sans { font-family: 'Noto Sans TC','Microsoft JhengHei',sans-serif; }
+    .ql-font-jhenghei  { font-family: 'Microsoft JhengHei','微軟正黑體',sans-serif; }
+    .ql-font-kai       { font-family: 'DFKai-SB','標楷體',serif; }
+    .ql-font-ming      { font-family: 'PMingLiU','新細明體',serif; }
+    .ql-font-serif     { font-family: serif; }
+    .ql-font-sans-serif{ font-family: sans-serif; }
+    .ql-font-monospace { font-family: monospace; }
+  </style>
+
+  {% if session.get("role") == "admin" %}
+    <a href="{{ url_for('edit_about') }}" class="btn btn-primary mt-3">✏️ 編輯內容</a>
+  {% endif %}
 </div>
 {% endblock %}

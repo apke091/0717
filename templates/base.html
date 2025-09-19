@@ -19,22 +19,20 @@
     font-family: 'Noto Sans TC', sans-serif;
     background-color: #f5f0fa; /* 淡紫色 */
   }
-
   .frosted-bg {
     background-color: white;
     border-radius: 1rem;
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.05);
     padding: 2rem;
   }
-</style>
-
+  </style>
 </head>
 <body class="your-other-classes">
 
   <!-- ✅ 漢堡選單 -->
   {% include "navbar.html" %}
 
-  <!-- ✅ flash 訊息（用 container 包住，不影響其他頁）-->
+  <!-- ✅ flash 訊息 -->
   {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
   <div class="container mt-3" id="flash-container">
@@ -46,20 +44,32 @@
     {% endfor %}
   </div>
   <script>
-    // 2 秒後自動移除 flash 訊息（不依賴 Bootstrap JS）
+    // 2 秒後自動移除 flash 訊息
     setTimeout(() => {
       document.querySelectorAll('.flash-auto').forEach(el => el.remove());
     }, 2000);
   </script>
   {% endif %}
-{% endwith %}
+  {% endwith %}
 
-
-  <!-- ✅ 主要內容區（不包 container，給各頁自己決定）-->
+  <!-- ✅ 主要內容區 -->
   {% block content %}{% endblock %}
 
   <!-- ✅ Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
 
+  {% if session.get("username") or force_refresh %}
+  <!-- ✅ 防止 BFCache / 前進後退還原舊畫面（登入或指定頁面才啟用） -->
+  <script>
+    window.addEventListener('pageshow', function (event) {
+      var navs = (performance.getEntriesByType && performance.getEntriesByType('navigation')) || [];
+      var nav = navs[0];
+      var isBackForward = nav && nav.type === 'back_forward';
+      if (event.persisted || isBackForward) {
+        window.location.reload();
+      }
+    });
+  </script>
+  {% endif %}
+</body>
 </html>
