@@ -1,66 +1,98 @@
-
-
 {% extends "base.html" %}
-{% block title %}租借申請管理{% endblock %}
+{% block title %}租借申請紀錄{% endblock %}
 
 {% block content %}
-<div class="container" style="margin-top: 90px">
-  <h2>📅 租借申請紀錄</h2>
+<style>
+  .panel-card { border:0; border-radius:18px; box-shadow:0 12px 30px rgba(83,70,186,.08); }
+  .panel-header{
+    border-bottom:0; padding:24px 28px 12px;
+    background:linear-gradient(135deg, rgba(131,93,255,.10), rgba(255,255,255,0));
+    border-top-left-radius:18px; border-top-right-radius:18px;
+  }
+  .panel-title{ font-weight:800; letter-spacing:.5px; margin:0; }
+  .table > :not(caption) > * > * { vertical-align: middle; }
+</style>
 
-  {% if rents %}
-  <table class="table table-bordered table-hover align-middle mt-4">
-    <thead class="table-light">
-      <tr>
-        <th>申請時間</th>
-        <th>場地</th>
-        <th>日期</th>
-        <th>時段</th>
-        <th>聯絡人</th>
-        <th>電話</th>
-        <th>電子郵件</th>
-        <th>備註</th>
-        <th>狀態</th>
-        <th>操作</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for r in rents %}
-      <tr>
-        <td>{{ r.submitted_at }}</td>
-        <td>{{ r.location }}</td>
-        <td>{{ r.date }}</td>
-        <td>{{ r.time_slot }}</td>
-        <td>{{ r.name }}</td>
-        <td>{{ r.phone }}</td>
-        <td><a href="mailto:{{ r.email }}">{{ r.email }}</a></td>
-        <td>{{ r.note or '' }}</td>
-        <td>
-          {% if r.status == 'approved' %}
-            ✅ 通過
-          {% elif r.status == 'rejected' %}
-            ❌ 駁回
-          {% else %}
-            ⏳ 審核中
-          {% endif %}
-        </td>
-        <td>
-          {% if r.status == 'pending' %}
-          <form method="post" style="display:inline;" onsubmit="return confirm('確定要通過這筆申請嗎？');">
-            <input type="hidden" name="id" value="{{ r.id }}">
-            <button name="action" value="approve" class="btn btn-sm btn-success">通過</button>
-          </form>
-          <form method="post" style="display:inline;" onsubmit="return confirm('確定要駁回並刪除這筆申請嗎？此動作無法還原');">
-            <input type="hidden" name="id" value="{{ r.id }}">
-            <button name="action" value="reject" class="btn btn-sm btn-danger">駁回</button>
-          </form>
-          {% else %}－{% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <p class="mt-4">目前尚無任何申請。</p>
-  {% endif %}
+<div class="container-fluid" style="margin-top:90px;">
+  <div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+
+      <div class="card panel-card">
+        <div class="panel-header">
+          <h2 class="panel-title">🗓️ 租借申請紀錄</h2>
+        </div>
+
+        <div class="card-body p-4 p-md-5">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>申請時間</th>
+                  <th>場地</th>
+                  <th>日期</th>
+                  <th>時段</th>
+                  <th>聯絡人</th>
+                  <th>電話</th>
+                  <th>電子郵件</th>
+                  <th>備註</th>
+                  <th>狀態</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in rents %}
+                <tr>
+                  <td class="text-nowrap">{{ r.submitted_at }}</td>
+                  <td>{{ r.location }}</td>
+                  <td class="text-nowrap">{{ r.date }}</td>
+                  <td class="text-nowrap">{{ r.time_slot }}</td>
+                  <td>{{ r.name }}</td>
+                  <td class="text-nowrap">{{ r.phone }}</td>
+                  <td>
+                    {% if r.email %}
+                      <a href="mailto:{{ r.email }}">{{ r.email }}</a>
+                    {% else %}—{% endif %}
+                  </td>
+                  <td style="max-width:240px; white-space:pre-wrap;">{{ r.note or '' }}</td>
+                  <td>
+                    {% if r.status == 'pending' %}
+                      <span class="badge text-bg-warning">審核中</span>
+                    {% elif r.status == 'approved' %}
+                      <span class="badge text-bg-success">已核准</span>
+                    {% elif r.status == 'rejected' %}
+                      <!-- 👇 駁回改成紅色 -->
+                      <span class="badge text-bg-danger">已駁回</span>
+                    {% else %}
+                      <span class="badge text-bg-secondary">{{ r.status }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-nowrap">
+                    {% if r.status == 'pending' %}
+                      <form action="{{ url_for('manage_rents') }}" method="POST" class="d-inline">
+                        <input type="hidden" name="id" value="{{ r.id }}">
+                        <input type="hidden" name="action" value="approve">
+                        <button class="btn btn-success btn-sm">核准</button>
+                      </form>
+                      <form action="{{ url_for('manage_rents') }}" method="POST" class="d-inline ms-1">
+                        <input type="hidden" name="id" value="{{ r.id }}">
+                        <input type="hidden" name="action" value="reject">
+                        <button class="btn btn-danger btn-sm">駁回</button>
+                      </form>
+                    {% else %}—{% endif %}
+                  </td>
+                </tr>
+                {% else %}
+                <tr>
+                  <td colspan="10" class="text-center text-muted py-5">目前沒有任何申請。</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
 </div>
 {% endblock %}

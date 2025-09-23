@@ -6,10 +6,12 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from functools import wraps
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+TZ = timezone(timedelta(hours=8))  # Asia/Taipei
 import uuid, mimetypes
 from werkzeug.utils import secure_filename
 from flask import send_file, abort
+
 
 import random
 load_dotenv()
@@ -135,6 +137,24 @@ def get_rent_time_slots():
         ("18:00–21:00", "18:00–21:00"),
     ]
 
+# ===== 時段常數 =====
+# 格式: (value, start, end)
+TIME_SLOTS = [
+    ("09:00-12:00", "09:00", "12:00"),
+    ("13:00-16:00", "13:00", "16:00"),
+    ("18:00-21:00", "18:00", "21:00"),
+]
+
+def get_booked_slots(conn, y, m, d, location):
+    """回傳當天某地點已被占用的時段字串（如 '09:00-12:00'），只算 approved 或 pending。"""
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT time_slot
+        FROM rent_requests
+        WHERE date = %s AND location = %s AND status IN ('approved', 'pending')
+    """, (datetime(y, m, d, tzinfo=TZ).date(), location))
+    rows = cur.fetchall()
+    return set(r[0] for r in rows)
 
 # app.secret_key = '9OG80KJiLKjfFowu4lqiMEo_Hv3r1EVGzvcP6MR2Av0'
 
@@ -416,72 +436,78 @@ def news():
 @app.route("/rent", methods=["GET", "POST"])
 def rent():
     if request.method == "POST":
-        location = request.form.get("location")
-        date = request.form.get("date")              # YYYY-MM-DD
-        time_slot = request.form.get("time_slot")    # 例如 "09:00–12:00"
-        name = request.form.get("name")
-        phone = request.form.get("phone")
-        email = request.form.get("email")
-        note = request.form.get("note") or ""
+        location = (request.form.get("location") or "").strip()
+        date = (request.form.get("date") or "").strip()          # YYYY-MM-DD
+        time_slot = (request.form.get("time_slot") or "").strip()  # 09:00–12:00
+        name = (request.form.get("name") or "").strip()
+        phone = (request.form.get("phone") or "").strip()
+        email = (request.form.get("email") or "").strip()
+        note = (request.form.get("note") or "").strip()
+
+        # 必填檢查
+        if not (location and date and time_slot and name and phone):
+            flash("❌ 必填欄位未填寫完整")
+            return redirect(url_for("rent"))
 
         # 防止選過去日期
-        today = datetime.now().date()
-        selected_date = datetime.strptime(date, "%Y-%m-%d").date()
+        today = datetime.now(TZ).date()
+        try:
+            selected_date = datetime.strptime(date, "%Y-%m-%d").date()
+        except ValueError:
+            flash("❌ 日期格式錯誤")
+            return redirect(url_for("rent"))
         if selected_date < today:
             flash("❌ 不能選擇今天以前的日期")
             return redirect(url_for("rent"))
 
-        # ✅【新增】電話/Email 格式驗證（在這裡）
-        # PHONE_RE、EMAIL_RE 已在檔案上方宣告
-        if not PHONE_RE.match(phone or ""):
+        # 電話格式檢查
+        if not PHONE_RE.match(phone):
             flash("❌ 電話格式錯誤，請輸入 09xx-xxx-xxx（可不輸入連字號）")
             return redirect(url_for("rent"))
 
-        if email and not EMAIL_RE.match(email):
+        # Email 格式檢查（必填）
+        email = (email or "").strip()
+        if not email:
+            flash("❌ Email 為必填")
+            return redirect(url_for("rent"))
+        if not EMAIL_RE.match(email):
             flash("❌ Email 格式不正確，請重新輸入")
             return redirect(url_for("rent"))
 
-        # ✅【新增】電話統一存成 09xx-xxx-xxx
-        digits = re.sub(r"\D", "", phone)[:10]  # 只留前 10 碼
+        # 電話統一存成 09xx-xxx-xxx
+        digits = re.sub(r"\D", "", phone)[:10]
         if len(digits) != 10:
             flash("❌ 電話需為 10 碼手機號碼（09xx-xxx-xxx）")
             return redirect(url_for("rent"))
         phone = f"{digits[:4]}-{digits[4:7]}-{digits[7:]}"
 
-        # 檢查是否已有相同場地+日期+時段（pending/approved 都視為占用）
+        # 檢查是否已有相同場地+日期+時段（pending/approved 視為占用）
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute(
-            """
-            SELECT 1
-            FROM rent_requests
+        cur.execute("""
+            SELECT 1 FROM rent_requests
             WHERE location=%s AND date=%s AND time_slot=%s
               AND status IN ('pending','approved')
-            """,
-            (location, date, time_slot)
-        )
+        """, (location, date, time_slot))
         if cur.fetchone():
             conn.close()
             flash("❌ 此時段已被預約")
             return redirect(url_for("rent"))
 
-        # 寫入資料庫（預設狀態 pending）
-        cur.execute(
-            """
+        # 寫入資料庫（status=pending）
+        cur.execute("""
             INSERT INTO rent_requests
                 (location, date, time_slot, name, phone, email, note, status, submitted_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
-            """,
-            (location, date, time_slot, name, phone, email, note, 'pending')
-        )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending', NOW())
+        """, (location, date, time_slot, name, phone, email, note))
         conn.commit()
         conn.close()
 
         flash("✅ 已送出申請，請等待審核")
         return redirect(url_for("rent"))
 
-    # GET
-    return render_template("rent.html", now=datetime.now())
+    # GET：帶 now 給模板（JS 會用到）
+    return render_template("rent.html", now=datetime.now(TZ).isoformat())
 
 @app.route("/api/rent/disabled_dates", methods=["GET"])
 def api_rent_disabled_dates():
@@ -512,30 +538,28 @@ def api_rent_disabled_dates():
 def api_rent_timeslots():
     """
     GET /api/rent/timeslots?date=YYYY-MM-DD&location=府前教室
-    回傳: {"available":[{"id":"09:00–12:00","label":"09:00–12:00"}, ...]}
+    回傳: {"available":[{"id":"09:00-12:00","label":"09:00–12:00"}, ...]}
     """
     location = (request.args.get("location") or "").strip()
     date_str = (request.args.get("date") or "").strip()
-
     if not location or not date_str:
         return jsonify({"available": []})
 
-    # 驗證日期
+    # 解析日期
     try:
         d = datetime.strptime(date_str, "%Y-%m-%d").date()
     except ValueError:
         return jsonify({"error": "bad date"}), 400
 
     # 過去日期沒有可選
-    if d < datetime.now().date():
+    today = datetime.now(TZ).date()
+    now   = datetime.now(TZ)
+    if d < today:
         return jsonify({"available": []})
 
-    # 全部候選時段（改成 3 段）
-    all_slots = get_rent_time_slots()
-
-    # 查這天這個場地已被占用（pending/approved 都算）
+    # 找出該日該地點已被占用的時段（pending/approved 都算占用）
     conn = get_db_connection()
-    cur = conn.cursor()  # RealDictCursor
+    cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute("""
         SELECT time_slot
         FROM rent_requests
@@ -544,16 +568,26 @@ def api_rent_timeslots():
     """, (location, date_str))
     rows = cur.fetchall()
     conn.close()
+    booked = { (r["time_slot"] or "").replace("–", "-").strip() for r in rows }
 
-    booked = {r["time_slot"] for r in rows}  # ⚠️ RealDictRow 用欄位名取值
+    # 建立可用清單
+    available = []
+    for val, start_hm, end_hm in TIME_SLOTS:  # e.g. ("09:00-12:00","09:00","12:00")
+        # 已被預約 → 跳過
+        if val in booked:
+            continue
 
-    remaining = [
-        {"id": slot_id, "label": label}
-        for (slot_id, label) in all_slots
-        if slot_id not in booked
-    ]
+        # 如果是「今天」，把已經開始的時段排除
+        if d == today:
+            sh, sm = map(int, start_hm.split(":"))
+            start_dt = datetime(d.year, d.month, d.day, sh, sm, tzinfo=TZ)
+            if start_dt <= now:
+                continue
 
-    return jsonify({"available": remaining})
+        # 回傳給前端的顯示字用 "–"
+        available.append({"id": val, "label": val.replace("-", "–")})
+
+    return jsonify({"available": available})
 
 
 @app.route("/manage_rents", methods=["GET", "POST"])
@@ -570,7 +604,7 @@ def manage_rents():
         if action == "approve":
             cur.execute("UPDATE rent_requests SET status='approved' WHERE id=%s", (rent_id,))
         elif action == "reject":
-            cur.execute("DELETE FROM rent_requests WHERE id=%s", (rent_id,))
+            cur.execute("UPDATE rent_requests SET status='rejected' WHERE id=%s", (rent_id,))
         conn.commit()
 
     cur.execute("SELECT * FROM rent_requests ORDER BY submitted_at DESC")

@@ -29,7 +29,7 @@
         </div>
 
         <div class="card-body p-4 p-md-5">
-          <form method="POST" action="{{ url_for('rent') }}">
+          <form id="rentForm" novalidate method="POST" action="{{ url_for('rent') }}">
             <!-- 場地 -->
             <div class="mb-3">
               <label class="form-label">選擇場地</label>
@@ -66,26 +66,43 @@
               </div>
             </div>
 
-            <!-- 申請人資訊 -->
+            <!-- 申請人 -->
             <div class="mb-3">
               <label class="form-label">申請人</label>
-              <input name="name" class="form-control" placeholder="請輸入您的名字" required>
+              <input id="name" name="name" class="form-control" placeholder="請輸入您的名字" required>
+              <div class="invalid-feedback">請輸入申請人姓名</div>
             </div>
+
+            <!-- 電話 -->
             <div class="mb-3">
               <label class="form-label">電話</label>
-              <input name="phone" class="form-control" placeholder="請輸入聯絡電話" required>
+              <input id="phone" name="phone" class="form-control"
+                     placeholder="09xx-xxx-xxx" required
+                     inputmode="tel"
+                     pattern="^09\\d{2}-?\\d{3}-?\\d{3}$"
+                     maxlength="13">
+              <div class="form-text">僅接受台灣手機：09xx-xxx-xxx（可不輸入連字號）。</div>
+              <div class="invalid-feedback">請輸入正確的手機號碼（09xx-xxx-xxx）</div>
             </div>
+
+            <!-- Email（必填） -->
             <div class="mb-3">
-              <label class="form-label">Email（選填）</label>
-              <input name="email" type="email" class="form-control" placeholder="example@email.com">
+              <label class="form-label">Email</label>
+              <input id="email" name="email" type="email" class="form-control"
+                     placeholder="name@example.com" required
+                     inputmode="email"
+                     pattern="^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$">
+              <div class="invalid-feedback">請輸入正確的 Email</div>
             </div>
+
+            <!-- 備註 -->
             <div class="mb-4">
               <label class="form-label">備註（選填）</label>
               <textarea name="note" rows="3" class="form-control" placeholder="有其他需求可在此說明"></textarea>
             </div>
 
             <div class="d-grid">
-              <button class="btn btn-primary" type="submit">送出申請</button>
+              <button id="submitBtn" class="btn btn-primary" type="submit">送出申請</button>
             </div>
           </form>
         </div>
@@ -93,25 +110,6 @@
 
     </div>
   </div>
-</div>
-<!-- 電話 -->
-<div class="mb-3">
-  <label class="form-label">電話</label>
-  <input name="phone" id="phone" class="form-control"
-         placeholder="09xx-xxx-xxx" required
-         inputmode="tel"
-         pattern="^09\d{2}-?\d{3}-?\d{3}$"
-         maxlength="13">
-  <div class="form-text">僅接受台灣手機：09xx-xxx-xxx（可不輸入連字號）。</div>
-</div>
-
-<!-- Email（選填） -->
-<div class="mb-3">
-  <label class="form-label">Email（選填）</label>
-  <input name="email" id="email" type="email" class="form-control"
-         placeholder="name@example.com"
-         inputmode="email"
-         pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$">
 </div>
 
 <script>
@@ -124,6 +122,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const hiddenDate = document.getElementById('date');
   const slot = document.getElementById('time_slot');
   const slotSpinner = document.getElementById('slotSpinner');
+
+  const form   = document.getElementById('rentForm');
+  const nameI  = document.getElementById('name');
+  const phoneI = document.getElementById('phone');
+  const emailI = document.getElementById('email');
 
   // ---- API ----
   const API_TS       = "{{ url_for('api_rent_timeslots') }}";
@@ -221,32 +224,79 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // ---- 初始化（需要 await，所以整個 handler 是 async）----
+  // ====== 前端驗證：只在按送出後才顯示紅色 ======
+  const PHONE_RE = /^09\d{2}-?\d{3}-?\d{3}$/;
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  let triedSubmit = false;
+
+  // 手機自動加連字號
+  if (phoneI) {
+    phoneI.addEventListener('input', (e) => {
+      const v = e.target.value.replace(/\D/g, '').slice(0, 10);
+      if (v.length >= 7) {
+        e.target.value = v.replace(/^(\d{4})(\d{3})(\d{0,3}).*$/, (_, a, b, c) => c ? `${a}-${b}-${c}` : `${a}-${b}`);
+      } else if (v.length >= 4) {
+        e.target.value = v.replace(/^(\d{4})(\d{0,3}).*$/, (_, a, b) => `${a}-${b}`);
+      } else {
+        e.target.value = v;
+      }
+      if (triedSubmit) validateAndMark();
+    });
+  }
+
+  function mark(el, ok) {
+    if (!el) return;
+    el.classList.toggle('is-invalid', !ok);
+  }
+
+  function validateAndMark() {
+    const nameOK   = !!nameI?.value.trim();
+    const phoneOK  = PHONE_RE.test((phoneI?.value || '').trim());
+    const emailVal = (emailI?.value || '').trim();
+    const emailOK  = emailVal.length > 0 && EMAIL_RE.test(emailVal);
+
+    const dateOK = !!hiddenDate.value && !!dd.value;
+    const slotOK = !slot.disabled && !!slot.value;
+    const locOK  = !!(loc.value || '').trim();
+
+    if (triedSubmit) {
+      mark(nameI,  nameOK);
+      mark(phoneI, phoneOK);
+      mark(emailI, emailOK);
+      // 如需也把 select 標紅，可打開下面：
+      // mark(loc,  locOK);
+      // mark(dd,   dateOK);
+      // mark(slot, slotOK);
+    }
+    return nameOK && phoneOK && emailOK && dateOK && slotOK && locOK;
+  }
+
+  form.addEventListener('submit', (e) => {
+    triedSubmit = true;
+    if (!validateAndMark()) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  });
+
+  // 按了送出後，使用者每次輸入/變更都即時更新紅框
+  ['input','change'].forEach(evt => {
+    nameI?.addEventListener(evt, () => { if (triedSubmit) validateAndMark(); });
+    phoneI?.addEventListener(evt, () => { if (triedSubmit) validateAndMark(); });
+    emailI?.addEventListener(evt, () => { if (triedSubmit) validateAndMark(); });
+    loc?.addEventListener(evt,   () => { if (triedSubmit) validateAndMark(); });
+    yyyy?.addEventListener(evt,  () => { if (triedSubmit) validateAndMark(); });
+    mm?.addEventListener(evt,    () => { if (triedSubmit) validateAndMark(); });
+    dd?.addEventListener(evt,    () => { if (triedSubmit) validateAndMark(); });
+    slot?.addEventListener(evt,  () => { if (triedSubmit) validateAndMark(); });
+  });
+
+  // ---- 初始化（需要 await）----
   yyyy.value = TY;
   rebuildMonths();
   await fetchDisabledDates();
   rebuildDays();
   await loadTimeSlots();
-
-  // ---- 事件 ----
-  yyyy.addEventListener('change', async () => { rebuildMonths(); await fetchDisabledDates(); rebuildDays(); loadTimeSlots(); });
-  mm.addEventListener('change', () => { rebuildDays(); loadTimeSlots(); });
-  dd.addEventListener('change', loadTimeSlots);
-  loc.addEventListener('change', async () => { await fetchDisabledDates(); rebuildDays(); loadTimeSlots(); });
 });
-    const phoneInput = document.getElementById('phone');
-if (phoneInput) {
-  phoneInput.addEventListener('input', (e) => {
-    const v = e.target.value.replace(/\D/g, '').slice(0, 10); // 只留 10 碼
-    if (v.length >= 7) {
-      e.target.value = v.replace(/^(\d{4})(\d{3})(\d{0,3}).*$/, (_, a, b, c) => c ? `${a}-${b}-${c}` : `${a}-${b}`);
-    } else if (v.length >= 4) {
-      e.target.value = v.replace(/^(\d{4})(\d{0,3}).*$/, (_, a, b) => `${a}-${b}`);
-    } else {
-      e.target.value = v;
-    }
-  });
-}
-
 </script>
 {% endblock %}
