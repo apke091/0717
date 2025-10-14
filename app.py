@@ -11,7 +11,7 @@ TZ = timezone(timedelta(hours=8))  # Asia/Taipei
 import uuid, mimetypes
 from werkzeug.utils import secure_filename
 from flask import send_file, abort
-
+import flask as _flask
 
 import random
 load_dotenv()
@@ -26,6 +26,12 @@ app = Flask(__name__)
 app.secret_key = "9OG80KJiLKjfFowu4lqiMEo_Hv3r1EVGzvcP6MR2Av0"  # 建議換成隨機字串
 app.permanent_session_lifetime = timedelta(days=7)     # 登入有效時間 7 天
 
+# 放在檔案最上面統一設定
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+UPLOAD_FOLDER_NEWS = os.path.join(BASE_DIR, "uploads", "news")
+ALLOWED_NEWS_EXTS = {"pdf", "jpg", "jpeg", "png", "doc", "docx", "ppt", "pptx"}
+os.makedirs(UPLOAD_FOLDER_NEWS, exist_ok=True)
+
 # 設定 mail
 app.config['MAIL_SERVER'] = os.environ.get("MAIL_SERVER")
 app.config['MAIL_PORT'] = int(os.environ.get("MAIL_PORT", 587))
@@ -38,6 +44,50 @@ mail = Mail(app)
 
 # app.jinja_env.cache = {}  # ✅ 關閉模板快取（開發用）
 
+# 若已經包過就不要重複包
+if not hasattr(_flask, "_original_flash"):
+    _flask._original_flash = _flask.flash  # 保存原始 flash 函式
+
+def _infer_flash_category(message):
+    """根據訊息內容推斷類別；未命中則回傳 info。"""
+    text = str(message)
+    low = text.lower()
+
+    success_keys = [
+        "✅", "成功", "已送出", "已加入", "已更新", "上傳成功", "登入成功",
+        "已清空", "已移除", "已刪除", "更新成功", "影片上傳成功"
+    ]
+    danger_keys = [
+        "❌", "錯誤", "失敗", "不能", "不可", "不存在", "找不到",
+        "不完整", "無法", "驗證碼錯誤", "已存在", "不能選擇", "沒有可結帳"
+    ]
+    warning_keys = ["⚠", "提醒", "請選擇", "請填寫", "必填", "警告"]
+
+    if any(k in text or k in low for k in success_keys):
+        return "success"
+    if any(k in text or k in low for k in danger_keys):
+        return "danger"
+    if any(k in text or k in low for k in warning_keys):
+        return "warning"
+    return "info"
+
+def flash(message, category=None):
+    """
+    用法跟原本的 flask.flash 一樣：
+    - 有給類別（success/danger/warning/info）→ 照你給的用
+    - 沒給類別 → 依內容自動判斷；判不到→顯示 info
+    """
+    if category is None or not str(category).strip():
+        category = _infer_flash_category(message)
+    return _flask._original_flash(message, category)
+# === /自動補 flash 類別 ===
+
+
+
+def allowed_news_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_NEWS_EXTS
+
+
 # 建立 PostgreSQL 資料庫連線
 
 def get_db_connection():
@@ -46,6 +96,59 @@ def get_db_connection():
         cursor_factory=RealDictCursor
     )
     return conn
+
+# 上傳資料夾 & 允許副檔名
+UPLOAD_FOLDER_COURSES = os.path.join(BASE_DIR, "uploads", "courses")
+ALLOWED_COURSE_EXTS = {"pdf", "jpg", "jpeg", "png"}
+os.makedirs(UPLOAD_FOLDER_COURSES, exist_ok=True)
+
+def ensure_courses_table():
+    """確保 courses 資料表存在"""
+    conn = get_db_connection()
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS courses (
+                    id SERIAL PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    dm_file TEXT,               -- 相對檔名（例如 courses/xxxx.pdf）
+                    signup_link TEXT,           -- 外部報名連結
+                    pinned BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_courses_created_at ON courses(created_at DESC);")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_courses_pinned ON courses(pinned);")
+    conn.close()
+
+def allowed_course_file(filename: str) -> bool:
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_COURSE_EXTS
+
+def save_course_dm(file_storage):
+    """儲存上傳的 DM；回傳相對路徑 'courses/<unique.ext>'，若無或不合法回傳 None"""
+    if not file_storage or not file_storage.filename.strip():
+        return None
+    fn = secure_filename(file_storage.filename)
+    ext = fn.rsplit(".", 1)[-1].lower() if "." in fn else ""
+    if ext not in ALLOWED_COURSE_EXTS:
+        return None
+    uniq = f"{uuid.uuid4().hex}.{ext}"
+    abs_path = os.path.join(UPLOAD_FOLDER_COURSES, uniq)
+    file_storage.save(abs_path)
+    return f"courses/{uniq}"
+
+def delete_course_dm_if_exists(relpath: str):
+    """刪除已存在的 DM 檔（只允許刪 uploads/courses/ 底下）"""
+    if not relpath or not relpath.startswith("courses/"):
+        return
+    abs_path = os.path.join(BASE_DIR, "uploads", relpath.replace("courses/", f"courses{os.sep}"))
+    if os.path.exists(abs_path):
+        try:
+            os.remove(abs_path)
+        except Exception:
+            pass
+
 
 # 下載專區：實體檔案目錄
 FILES_DIR = os.path.join(app.root_path, "static", "files")
@@ -875,6 +978,137 @@ def checkout():
     return render_template("checkout.html", items=items, total=total)
 
 # 需要在檔案頂端加： from flask import jsonify
+
+#課程專區
+@app.route("/courses")
+def courses():
+    """前台：課程列表（置頂優先、時間新到舊）"""
+    ensure_courses_table()
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("""
+        SELECT id, title, description, dm_file, signup_link, pinned, created_at
+        FROM courses
+        ORDER BY pinned DESC, created_at DESC
+    """)
+    rows = cur.fetchall()
+    conn.close()
+    return render_template("courses.html", courses=rows)
+
+@app.route("/manage_courses", methods=["GET", "POST"])
+@admin_required
+def manage_courses():
+    """後台：新增/列表"""
+    ensure_courses_table()
+
+    if request.method == "POST":
+        title = (request.form.get("title") or "").strip()
+        description = (request.form.get("description") or "").strip()
+        signup_link = (request.form.get("signup_link") or "").strip()
+        pinned = request.form.get("pinned") == "on"
+        dm_rel = None
+
+        if not title:
+            flash("請填寫標題")
+            return redirect(url_for("manage_courses"))
+
+        # 處理 DM （可不選）
+        if "dm_file" in request.files:
+            dm_rel = save_course_dm(request.files["dm_file"])
+
+        conn = get_db_connection()
+        with conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO courses (title, description, dm_file, signup_link, pinned)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (title, description, dm_rel, signup_link, pinned))
+        conn.close()
+        flash("課程已新增")
+        return redirect(url_for("manage_courses"))
+
+    # GET：列表
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("""
+        SELECT id, title, description, dm_file, signup_link, pinned, created_at
+        FROM courses
+        ORDER BY pinned DESC, created_at DESC
+    """)
+    rows = cur.fetchall()
+    conn.close()
+    return render_template("manage_courses.html", courses=rows)
+
+@app.route("/manage_courses/<int:course_id>/update", methods=["POST"])
+@admin_required
+def update_course(course_id):
+    """後台：更新（含可換 DM）"""
+    title = (request.form.get("title") or "").strip()
+    description = (request.form.get("description") or "").strip()
+    signup_link = (request.form.get("signup_link") or "").strip()
+    pinned = request.form.get("pinned") == "on"
+
+    if not title:
+        flash("請填寫標題")
+        return redirect(url_for("manage_courses"))
+
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    # 取舊 DM
+    cur.execute("SELECT dm_file FROM courses WHERE id=%s", (course_id,))
+    old = cur.fetchone()
+    old_dm = (old or {}).get("dm_file")
+
+    # 如有新檔 → 先存新檔，再刪舊檔
+    new_dm = old_dm
+    if "dm_file" in request.files and request.files["dm_file"].filename.strip():
+        maybe = save_course_dm(request.files["dm_file"])
+        if maybe:
+            new_dm = maybe
+            if old_dm and old_dm != new_dm:
+                delete_course_dm_if_exists(old_dm)
+
+    cur.execute("""
+        UPDATE courses
+        SET title=%s, description=%s, signup_link=%s, pinned=%s, dm_file=%s
+        WHERE id=%s
+    """, (title, description, signup_link, pinned, new_dm, course_id))
+    conn.commit()
+    conn.close()
+    flash("課程已更新")
+    return redirect(url_for("manage_courses"))
+
+@app.route("/manage_courses/<int:course_id>/delete", methods=["POST"])
+@admin_required
+def delete_course(course_id):
+    """後台：刪除課程（連帶刪 DM 檔案）"""
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT dm_file FROM courses WHERE id=%s", (course_id,))
+    row = cur.fetchone()
+    dm_rel = (row or {}).get("dm_file")
+
+    cur.execute("DELETE FROM courses WHERE id=%s", (course_id,))
+    conn.commit()
+    conn.close()
+
+    delete_course_dm_if_exists(dm_rel)
+    flash("課程已刪除")
+    return redirect(url_for("manage_courses"))
+
+@app.route("/download/course-dm/<path:filename>")
+def download_course_dm(filename):
+    """下載課程 DM（僅限 uploads/courses/ 底下）"""
+    # 簡單防護：不接受子資料夾跳脫
+    if os.path.sep in filename or (os.path.altsep and os.path.altsep in filename):
+        abort(400)
+    abs_path = os.path.join(UPLOAD_FOLDER_COURSES, filename)
+    if not os.path.isfile(abs_path):
+        abort(404)
+    mime = mimetypes.guess_type(abs_path)[0] or "application/octet-stream"
+    return send_file(abs_path, as_attachment=True, download_name=filename, mimetype=mime)
+
 
 @app.route("/api/cart/qty", methods=["POST"])
 def api_cart_qty():

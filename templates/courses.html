@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}課程專區{% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top: 90px;">
+  <h2 class="fw-bold mb-3">📚 課程專區</h2>
+
+  {% if courses %}
+    {% for c in courses %}
+      <div class="card mb-3 shadow-sm border-0 rounded-4">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between">
+            <h5 class="card-title fw-bold mb-1">
+              {% if c.pinned %}<span class="badge text-bg-warning me-2">置頂</span>{% endif %}
+              {{ c.title }}
+            </h5>
+            <small class="text-muted">
+              {{ c.created_at.strftime("%Y-%m-%d") if c.created_at else "" }}
+            </small>
+          </div>
+
+          {% if c.description %}
+            <p class="card-text mt-2 mb-3" style="white-space: pre-wrap;">{{ c.description }}</p>
+          {% endif %}
+
+          <div class="d-flex gap-2">
+            {% if c.dm_file %}
+              <a class="btn btn-outline-primary btn-sm"
+                 href="{{ url_for('download_course_dm', filename=c.dm_file.split('/')[-1]) }}">
+                📄 下載DM
+              </a>
+            {% endif %}
+            {% if c.signup_link %}
+              <a class="btn btn-primary btn-sm" href="{{ c.signup_link }}" target="_blank" rel="noopener">
+                📝 前往報名
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}{% extends "base.html" %}
+{% block title %}課程專區{% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top: 90px;">
+  <h2 class="fw-bold mb-3">📚 課程專區</h2>
+
+  {% if courses %}
+    {% for c in courses %}
+      <div class="card mb-3 shadow-sm border-0 rounded-4">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between">
+            <h5 class="card-title fw-bold mb-1">
+              {% if c.pinned %}<span class="badge text-bg-warning me-2">置頂</span>{% endif %}
+              {{ c.title }}
+            </h5>
+            <small class="text-muted">
+              {{ c.created_at.strftime("%Y-%m-%d") if c.created_at else "" }}
+            </small>
+          </div>
+
+          {% if c.description %}
+            <p class="card-text mt-2 mb-3" style="white-space: pre-wrap;">{{ c.description }}</p>
+          {% endif %}
+
+          <div class="d-flex gap-2">
+            {% if c.dm_file %}
+              <a class="btn btn-outline-primary btn-sm"
+                 href="{{ url_for('download_course_dm', filename=c.dm_file.split('/')[-1]) }}">
+                📄 下載DM
+              </a>
+            {% endif %}
+            {% if c.signup_link %}
+              <a class="btn btn-primary btn-sm" href="{{ c.signup_link }}" target="_blank" rel="noopener">
+                📝 前往報名
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="alert alert-info">目前尚無課程，請稍後再來看看！</div>
+  {% endif %}
+</div>
+{% endblock %}
+
+  {% else %}
+    <div class="alert alert-info">目前尚無課程，請稍後再來看看！</div>
+  {% endif %}
+</div>
+{% endblock %}

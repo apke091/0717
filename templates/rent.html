@@ -144,33 +144,38 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 年：今年 ~ +2
   for (let y = TY; y <= TY + 2; y++) yyyy.add(new Option(y, y));
 
-  // 今年只顯示「本月以後」，未來年份顯示 1-12
+  // 今年只顯示「本月以後」，未來年份顯示 1–12 ⇒ 每次重建都把月份設為第一個
   function rebuildMonths() {
-    const y = parseInt(yyyy.value, 10);
+    const y = Number(yyyy.value);
     mm.innerHTML = '';
     const startM = (y === TY) ? TM : 1;
-    for (let m = startM; m <= 12; m++) mm.add(new Option(pad2(m), pad2(m)));
-    if (!mm.value && mm.options.length) mm.value = mm.options[0].value;
+    for (let m = startM; m <= 12; m++) {
+      mm.add(new Option(pad2(m), pad2(m)));
+    }
+    if (mm.options.length) mm.value = mm.options[0].value; // 重設成第一個
   }
 
-  // 依年/月重建日期：同年同月只顯示「今天以後」；整天已滿的直接不渲染
+  // 依年/月重建日期；每次重建都把日期設為第一個可選
   function rebuildDays() {
-    const y = parseInt(yyyy.value, 10);
-    const m = parseInt(mm.value, 10);
+    const y = Number(yyyy.value);
+    const m = Number(mm.value);
     dd.innerHTML = '';
     if (!y || !m) return;
 
     const startD = (y === TY && m === TM) ? TD : 1;
     const dim = daysInMonth(y, m);
+
     let first = '';
     for (let d = startD; d <= dim; d++) {
       const iso = `${y}-${pad2(m)}-${pad2(d)}`;
-      if (disabledSet.has(iso)) continue;  // 整天已滿 → 不顯示
+      if (disabledSet.has(iso)) continue; // 整天已滿 → 不顯示
       const opt = new Option(pad2(d), pad2(d));
       dd.add(opt);
       if (!first) first = opt.value;
     }
-    dd.value = first || '';
+
+    dd.value = first || ''; // 重設為第一個可選日期
+    hiddenDate.value = dd.value ? `${y}-${pad2(m)}-${dd.value}` : '';
   }
 
   async function fetchDisabledDates() {
@@ -192,9 +197,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   function showSpinner(on){ slotSpinner.classList.toggle('d-none', !on); }
 
   async function loadTimeSlots() {
-    const y = parseInt(yyyy.value, 10);
-    const m = parseInt(mm.value, 10);
-    const d = parseInt(dd.value, 10);
+    const y = Number(yyyy.value);
+    const m = Number(mm.value);
+    const d = Number(dd.value);
     const l = (loc.value || '').trim();
 
     if (!(y && m && d && l)) { setSlot('請先選擇日期', false); return; }
@@ -291,12 +296,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     slot?.addEventListener(evt,  () => { if (triedSubmit) validateAndMark(); });
   });
 
-  // ---- 初始化（需要 await）----
+  // ---- 初始化 ----
   yyyy.value = TY;
   rebuildMonths();
   await fetchDisabledDates();
   rebuildDays();
   await loadTimeSlots();
+
+  // ---- 事件：年月日/場地改變 ----
+  yyyy.addEventListener('change', async () => {
+    rebuildMonths();             // 自動設為第一個可選月份
+    await fetchDisabledDates();
+    rebuildDays();               // 自動設為第一個可選日期
+    await loadTimeSlots();
+  });
+
+  mm.addEventListener('change', async () => {
+    rebuildDays();
+    await loadTimeSlots();
+  });
+
+  dd.addEventListener('change', loadTimeSlots);
+
+  loc.addEventListener('change', async () => {
+    await fetchDisabledDates();
+    rebuildDays();
+    await loadTimeSlots();
+  });
 });
 </script>
 {% endblock %}

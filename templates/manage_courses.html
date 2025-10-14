@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}管理課程{% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top: 90px; max-width: 980px;">
+  <h2 class="fw-bold mb-3">🛠️ 管理課程</h2>
+
+  <!-- 新增課程 -->
+  <div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-header bg-white border-0 py-3">
+      <strong>新增課程</strong>
+    </div>
+    <div class="card-body">
+      <form method="POST" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label class="form-label">標題 <span class="text-danger">*</span></label>
+          <input type="text" name="title" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">課程說明</label>
+          <textarea name="description" class="form-control" rows="5" placeholder="可貼完整課程介紹、時間、地點等"></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">報名連結（Google 表單或其他）</label>
+          <input type="url" name="signup_link" class="form-control" placeholder="https://...">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">DM 檔案（pdf/jpg/png，可不選）</label>
+          <input type="file" name="dm_file" accept=".pdf,.jpg,.jpeg,.png" class="form-control">
+        </div>
+
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" name="pinned" id="newPinned">
+          <label class="form-check-label" for="newPinned">置頂</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">新增</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 課程列表 -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-header bg-white border-0 py-3">
+      <strong>課程列表</strong>
+    </div>
+    <div class="card-body">
+      {% if courses %}
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th style="width: 48px;">置頂</th>
+                <th>標題</th>
+                <th style="width: 120px;">建立時間</th>
+                <th style="width: 220px;">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in courses %}
+                <tr>
+                  <td>
+                    {% if c.pinned %}
+                      <span class="badge text-bg-warning">置頂</span>
+                    {% endif %}
+                  </td>
+                  <td class="fw-semibold">{{ c.title }}</td>
+                  <td class="text-muted">{{ c.created_at.strftime("%Y-%m-%d") if c.created_at else "" }}</td>
+                  <td>
+                    <button class="btn btn-outline-secondary btn-sm" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#edit{{ c.id }}">
+                      編輯
+                    </button>
+                    <form class="d-inline" method="POST" action="{{ url_for('delete_course', course_id=c.id) }}"
+                          onsubmit="return confirm('確定要刪除此課程？');">
+                      <button class="btn btn-outline-danger btn-sm" type="submit">刪除</button>
+                    </form>
+                    <a class="btn btn-outline-primary btn-sm" href="{{ url_for('courses') }}" target="_blank">前台檢視</a>
+                  </td>
+                </tr>
+                <tr class="collapse" id="edit{{ c.id }}">
+                  <td colspan="4">
+                    <form class="border rounded p-3" method="POST" enctype="multipart/form-data"
+                          action="{{ url_for('update_course', course_id=c.id) }}">
+                      <div class="row g-3">
+                        <div class="col-md-8">
+                          <label class="form-label">標題</label>
+                          <input type="text" name="title" class="form-control" value="{{ c.title }}" required>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                          <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="pinned" id="p{{ c.id }}"
+                                   {% if c.pinned %}checked{% endif %}>
+                            <label class="form-check-label" for="p{{ c.id }}">置頂</label>
+                          </div>
+                        </div>
+                        <div class="col-12">
+                          <label class="form-label">課程說明</label>
+                          <textarea name="description" class="form-control" rows="5">{{ c.description or "" }}</textarea>
+                        </div>
+                        <div class="col-md-8">
+                          <label class="form-label">報名連結</label>
+                          <input type="url" name="signup_link" class="form-control" value="{{ c.signup_link or '' }}" placeholder="https://...">
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label">替換 DM（可不選）</label>
+                          <input type="file" name="dm_file" accept=".pdf,.jpg,.jpeg,.png" class="form-control">
+                          {% if c.dm_file %}
+                            <div class="form-text mt-1">目前檔案：{{ c.dm_file.split('/')[-1] }}</div>
+                          {% endif %}
+                        </div>
+                      </div>
+                      <div class="mt-3">
+                        <button class="btn btn-primary btn-sm" type="submit">儲存變更</button>
+                      </div>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="alert alert-info">尚無課程資料。</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -48,7 +48,7 @@ def init_db():
         status TEXT DEFAULT 'pending'
     );
     """)
-    # 確保欄位存在（即使上面已建過也不會報錯）
+    # 確保欄位存在
     cur.execute("ALTER TABLE rent_requests ADD COLUMN IF NOT EXISTS email TEXT;")
     cur.execute("ALTER TABLE rent_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';")
 
@@ -90,15 +90,15 @@ def init_db():
     CREATE TABLE IF NOT EXISTS downloads (
         id SERIAL PRIMARY KEY,
         title TEXT NOT NULL,
-        filename TEXT NOT NULL,          -- 實際存到磁碟上的檔名（避免碰撞）
-        original_name TEXT NOT NULL,     -- 使用者上傳的原始檔名（列表顯示用）
+        filename TEXT NOT NULL,
+        original_name TEXT NOT NULL,
         mime TEXT,
         size_bigint BIGINT,
         uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """)
 
-    # ✅ contact_messages：聯絡我們留言
+    # contact_messages
     cur.execute("""
     CREATE TABLE IF NOT EXISTS contact_messages (
         id SERIAL PRIMARY KEY,
@@ -107,6 +107,43 @@ def init_db():
         message TEXT NOT NULL,
         submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
+    """)
+
+    # ✅ news（最新消息）
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS news (
+        id BIGSERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        content TEXT,
+        link TEXT,
+        publish_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+        is_visible BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    """)
+
+    # 自動更新 updated_at
+    cur.execute("""
+    DO $$
+    BEGIN
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_trigger WHERE tgname = 'trg_news_updated_at'
+        ) THEN
+            CREATE OR REPLACE FUNCTION set_news_updated_at() RETURNS trigger AS $$
+            BEGIN
+                NEW.updated_at := NOW();
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
+
+            CREATE TRIGGER trg_news_updated_at
+            BEFORE UPDATE ON news
+            FOR EACH ROW
+            EXECUTE FUNCTION set_news_updated_at();
+        END IF;
+    END$$;
     """)
 
     conn.commit()
