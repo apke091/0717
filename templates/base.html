@@ -11,226 +11,202 @@
   <!-- Google 字體 -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC&display=swap" rel="stylesheet">
 
-  <!-- 自訂樣式 -->
+  <!-- 你原本的站內樣式（保留） -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
-  <style>
-  body {
-    font-family: 'Noto Sans TC', sans-serif;
-    background-color: #f5f0fa; /* 淡紫色 */
-  }
-  .frosted-bg {
-    background-color: white;
-    border-radius: 1rem;
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.05);
-    padding: 2rem;
-  }
-  </style>
-</head>
-<body class="your-other-classes">
+  <!-- 新增：統一全站寬度的覆蓋檔，務必放最後 -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=20251021">
 
-  <!-- ✅ 漢堡選單 -->
+  <style>
+    body{
+      font-family:'Noto Sans TC',sans-serif;
+      background-color:#f5f0fa; /* 淡紫色 */
+    }
+    .frosted-bg{
+      background-color:#fff;
+      border-radius:1rem;
+      box-shadow:0 0 30px rgba(0,0,0,.05);
+      padding:2rem;
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+</head>
+
+<!-- 讓頁尾黏底：直向 flex 版型；加入 body_class 可供子頁覆寫 -->
+<body class="d-flex flex-column min-vh-100 {% block body_class %}no-footer-first-fold{% endblock %}">
+
+  <!-- ✅ 導覽列 -->
   {% include "navbar.html" %}
 
- <!-- ✅ flash 訊息（固定在視窗底部，關閉後完全移除，不留白） -->
-<!-- ✅ 漂亮版 Flash（固定底部、倒數、懸停暫停、關閉後不留白） -->
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-<div id="flash-container"
-     class="flash-stack position-fixed start-50 translate-middle-x p-3"
-     style="bottom:16px; z-index:1080; width:min(92vw,560px); pointer-events:none;">
-  {% for category, message in messages %}
-    {% set cat = 'success' if category in ['message','success'] else category %}
-    <div class="alert alert-{{ cat }} flash-toast fade show shadow"
-         role="alert" data-duration="2600" style="pointer-events:auto;">
-      <div class="d-flex align-items-start gap-2">
-        <div class="flash-icon">
-          {% if cat == 'success' %}
-          <!-- check -->
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          {% elif cat == 'danger' %}
-          <!-- x -->
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          {% elif cat == 'warning' %}
-          <!-- ! -->
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M12 8v5m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          {% else %}
-          <!-- info -->
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
-            <path d="M12 8h.01M11 12h1v4h1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          {% endif %}
+  <!-- ✅ Flash（保留你的原樣） -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div id="flash-container"
+       class="flash-stack position-fixed start-50 translate-middle-x p-3"
+       style="bottom:16px; z-index:1080; width:min(92vw,560px); pointer-events:none;">
+    {% for category, message in messages %}
+      {% set cat = 'success' if category in ['message','success'] else category %}
+      <div class="alert alert-{{ cat }} flash-toast fade show shadow"
+           role="alert" data-duration="2600" style="pointer-events:auto;">
+        <div class="d-flex align-items-start gap-2">
+          <div class="flash-icon">
+            {% if cat == 'success' %}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            {% elif cat == 'danger' %}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            {% elif cat == 'warning' %}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 8v5m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            {% else %}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 8h.01M11 12h1v4h1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            {% endif %}
+          </div>
+
+          <div class="flex-grow-1 pe-2">{{ message|safe }}</div>
+          <button type="button" class="btn-close flash-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-
-        <div class="flex-grow-1 pe-2">{{ message|safe }}</div>
-
-        <button type="button" class="btn-close flash-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="flash-progress"></div>
       </div>
-      <div class="flash-progress"></div>
-    </div>
-  {% endfor %}
-</div>
-<style>
-  #flash-container:empty { display:none; }
+    {% endfor %}
+  </div>
 
-  .flash-toast{
-    border:0;
-    border-radius:14px;
-    padding:12px 12px 10px;
-    box-shadow:0 12px 30px rgba(83,70,186,.14);
-    position: relative;
-    overflow: hidden;
-    transform: translateY(8px);
-    animation: flash-in .28s ease-out forwards;
-    background: rgba(255,255,255,.9);
-    backdrop-filter: blur(6px);
-  }
-  @keyframes flash-in { to { transform: translateY(0); opacity:1 } }
+  <style>
+    #flash-container:empty{display:none}
+    .flash-toast{border:0;border-radius:14px;padding:12px 12px 10px;box-shadow:0 12px 30px rgba(83,70,186,.14);position:relative;overflow:hidden;transform:translateY(8px);animation:flash-in .28s ease-out forwards;background:rgba(255,255,255,.9);backdrop-filter:blur(6px)}
+    @keyframes flash-in{to{transform:translateY(0);opacity:1}}
+    .flash-toast::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;opacity:.9}
+    .flash-toast.alert-success::before{background:#22c55e}
+    .flash-toast.alert-danger::before{background:#ef4444}
+    .flash-toast.alert-warning::before{background:#f59e0b}
+    .flash-toast.alert-info::before{background:#3b82f6}
+    .flash-toast.alert-success{background:rgba(34,197,94,.10);color:#14532d}
+    .flash-toast.alert-danger{background:rgba(239,68,68,.10);color:#7f1d1d}
+    .flash-toast.alert-warning{background:rgba(245,158,11,.12);color:#78350f}
+    .flash-toast.alert-info{background:rgba(59,130,246,.10);color:#0c4a6e}
+    .flash-icon{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;flex:0 0 28px}
+    .alert-success .flash-icon{background:rgba(34,197,94,.18);color:#16a34a}
+    .alert-danger .flash-icon{background:rgba(239,68,68,.18);color:#dc2626}
+    .alert-warning .flash-icon{background:rgba(245,158,11,.22);color:#d97706}
+    .alert-info .flash-icon{background:rgba(59,130,246,.18);color:#2563eb}
+    .flash-close{outline:none!important;filter:saturate(.6)}
+    .flash-close:hover{filter:none}
+    .flash-progress{position:absolute;left:6px;right:10px;bottom:6px;height:3px;border-radius:2px;background:rgba(0,0,0,.08);overflow:hidden}
+    .flash-progress::after{content:"";display:block;height:100%;width:100%;transform-origin:left;background:currentColor;opacity:.45;transition:transform linear}
+    .alert-success .flash-progress{color:#16a34a}
+    .alert-danger .flash-progress{color:#dc2626}
+    .alert-warning .flash-progress{color:#d97706}
+    .alert-info .flash-progress{color:#2563eb}
+    /* ========== Sleek Footer ========== */
+    :root{
+      --brand1:#7c6bff;
+      --brand2:#a06bff;
+      --ink:#2c2f45;
+      --muted:#6a738a;
+      --line:#ece9f6;
+      --soft:#f6f2ff;
+    }
+    .footer-neo{
+      background: linear-gradient(180deg, var(--soft) 0%, #ffffff 100%);
+      border-top: 1px solid var(--line);
+    }
+    .footer-neo .ft-title{
+      font-weight:800; letter-spacing:.3px; color:var(--ink);
+      background:linear-gradient(135deg,var(--brand1),var(--brand2));
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+    }
+    .footer-neo .ft-list{ list-style:none; padding:0; margin:0; }
+    .footer-neo .ft-list li{ margin:.4rem 0; }
+    .footer-neo .ft-list a{
+      text-decoration:none;
+      color:var(--muted);
+      transition: color .15s ease, border-color .15s ease;
+      border-bottom:1px solid transparent;
+    }
+    .footer-neo .ft-list a:hover{
+      color:var(--ink);
+      border-color:var(--line);
+    }
+    .footer-neo .ft-social{
+      width:36px; height:36px; border-radius:999px;
+      display:inline-flex; align-items:center; justify-content:center;
+      border:1px solid var(--line); color:#55607a; text-decoration:none;
+      transition:transform .15s ease, background .15s ease, color .15s ease;
+    }
+    .footer-neo .ft-social:hover{
+      transform:translateY(-2px);
+      background:#f2efff;
+      color:#3b2fe0;
+    }
+    .footer-neo .ft-legal{
+      border-top:1px dashed var(--line);
+      padding:14px 0;
+      background:#fff;
+    }
+    .footer-neo .ft-legal-link{
+      color:#8a90a3; text-decoration:none; font-size:.95rem;
+    }
+    .footer-neo .ft-legal-link:hover{ color:#4a5166; text-decoration:underline; }
+  </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const container = document.getElementById('flash-container');
+      document.querySelectorAll('#flash-container .flash-toast').forEach(el => {
+        const alertInst = bootstrap.Alert.getOrCreateInstance(el);
+        const prog = el.querySelector('.flash-progress');
+        const dur = parseInt(el.getAttribute('data-duration') || '2400', 10);
 
-  /* 左側色條 */
-  .flash-toast::before{
-    content:"";
-    position:absolute; left:0; top:0; bottom:0; width:6px;
-    opacity:.9;
-  }
-  .flash-toast.alert-success::before{ background:#22c55e; }
-  .flash-toast.alert-danger::before{  background:#ef4444; }
-  .flash-toast.alert-warning::before{ background:#f59e0b; }
-  .flash-toast.alert-info::before{    background:#3b82f6; }
+        const bar = document.createElement('div');
+        bar.style.height='100%';bar.style.width='100%';bar.style.transformOrigin='left';
+        bar.style.background=getComputedStyle(prog).color;bar.style.opacity='.45';
+        bar.style.transition=`transform ${dur}ms linear`;
+        prog.innerHTML='';prog.appendChild(bar);
 
-  /* 背景淡色（依情境） */
-  .flash-toast.alert-success{ background:rgba(34,197,94,.10); color:#14532d; }
-  .flash-toast.alert-danger{  background:rgba(239,68,68,.10); color:#7f1d1d; }
-  .flash-toast.alert-warning{ background:rgba(245,158,11,.12); color:#78350f; }
-  .flash-toast.alert-info{    background:rgba(59,130,246,.10); color:#0c4a6e; }
+        let remaining=dur,timerId=null,lastHoverStart=null;
 
-  .flash-icon{
-    display:grid; place-items:center;
-    width:28px; height:28px; border-radius:50%;
-    flex:0 0 28px;
-  }
-  .alert-success .flash-icon{ background:rgba(34,197,94,.18); color:#16a34a; }
-  .alert-danger  .flash-icon{ background:rgba(239,68,68,.18); color:#dc2626; }
-  .alert-warning .flash-icon{ background:rgba(245,158,11,.22); color:#d97706; }
-  .alert-info    .flash-icon{ background:rgba(59,130,246,.18); color:#2563eb; }
-
-  .flash-close{
-    outline:none !important;
-    filter: saturate(0.6);
-  }
-  .flash-close:hover{ filter: none; }
-
-  /* 底部倒數條 */
-  .flash-progress{
-    position:absolute; left:6px; right:10px; bottom:6px; height:3px;
-    border-radius:2px; background:rgba(0,0,0,.08); overflow:hidden;
-  }
-  .flash-progress::after{
-    content:""; display:block; height:100%; width:100%;
-    transform-origin:left;
-    background: currentColor; opacity:.45;
-    transition: transform linear;
-  }
-  .alert-success .flash-progress{ color:#16a34a; }
-  .alert-danger  .flash-progress{ color:#dc2626; }
-  .alert-warning .flash-progress{ color:#d97706; }
-  .alert-info    .flash-progress{ color:#2563eb; }
-</style>
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const container = document.getElementById('flash-container');
-
-    document.querySelectorAll('#flash-container .flash-toast').forEach(el => {
-      const alertInst = bootstrap.Alert.getOrCreateInstance(el);
-      const progress = el.querySelector('.flash-progress::after'); // not accessible
-      const prog = el.querySelector('.flash-progress');
-      const dur = parseInt(el.getAttribute('data-duration') || '2400', 10);
-
-      // 讓進度條從 100% -> 0%
-      // 用 transform:scaleX()，避免 layout 抖動
-      const bar = document.createElement('div');
-      bar.style.height = '100%';
-      bar.style.width = '100%';
-      bar.style.transformOrigin = 'left';
-      bar.style.background = getComputedStyle(prog).color;
-      bar.style.opacity = '.45';
-      bar.style.transition = `transform ${dur}ms linear`;
-      prog.innerHTML = '';
-      prog.appendChild(bar);
-
-      let remaining = dur, timerId = null, lastHoverStart = null;
-
-      const start = () => {
-        timerId = setTimeout(() => alertInst.close(), remaining);
-        requestAnimationFrame(() => bar.style.transform = 'scaleX(0)');
-      };
-      const pause = () => {
-        if (!timerId) return;
-        clearTimeout(timerId); timerId = null;
-        // 取消動畫但保留目前比例
-        const cs = getComputedStyle(bar).transform;
-        // 讀取目前矩陣的縮放比例（簡化處理）
-        // 若無法取得，忽略即可
-        lastHoverStart = Date.now();
-        bar.style.transition = 'none';
-      };
-      const resume = () => {
-        if (timerId) return;
-        if (lastHoverStart) remaining -= (Date.now() - lastHoverStart);
-        if (remaining < 300) remaining = 300;
-        // 依剩餘時間重啟動畫
-        // 估算目前寬度：用 getBoundingClientRect 近似
-        const w = prog.getBoundingClientRect().width;
-        const bw = bar.getBoundingClientRect().width || w;
-        const ratio = bw / w;
-        bar.style.transition = `transform ${remaining}ms linear`;
-        requestAnimationFrame(() => bar.style.transform = 'scaleX(0)');
-        timerId = setTimeout(() => alertInst.close(), remaining);
-      };
-
-      // 初始開跑（約 2.4 秒）
-      start();
-
-      // 懸停暫停 / 離開續跑
-      el.addEventListener('mouseenter', pause);
-      el.addEventListener('mouseleave', resume);
-
-      // 關閉後把節點與容器清乾淨，避免留白
-      el.addEventListener('closed.bs.alert', () => {
-        el.remove();
-        if (!container.querySelector('.flash-toast')) container.remove();
+        const start=()=>{timerId=setTimeout(()=>alertInst.close(),remaining);
+          requestAnimationFrame(()=>bar.style.transform='scaleX(0)');};
+        const pause=()=>{if(!timerId)return;clearTimeout(timerId);timerId=null;lastHoverStart=Date.now();bar.style.transition='none';};
+        const resume=()=>{if(timerId)return;if(lastHoverStart)remaining-=(Date.now()-lastHoverStart);if(remaining<300)remaining=300;
+          const w=prog.getBoundingClientRect().width;const bw=bar.getBoundingClientRect().width||w;
+          bar.style.transition=`transform ${remaining}ms linear`;
+          requestAnimationFrame(()=>bar.style.transform='scaleX(0)');
+          timerId=setTimeout(()=>alertInst.close(),remaining);};
+        start();
+        el.addEventListener('mouseenter',pause);el.addEventListener('mouseleave',resume);
+        el.addEventListener('closed.bs.alert',()=>{el.remove();if(!container.querySelector('.flash-toast'))container.remove();});
       });
     });
-  });
-</script>
-{% endif %}
-{% endwith %}
+  </script>
+  {% endif %}
+  {% endwith %}
 
+  <!-- ✅ 主要內容（撐開中間區域） -->
+  <main class="flex-fill">
+    {% block content %}{% endblock %}
+  </main>
 
+  <!-- ✅ Footer 區塊（預設包含，可在子頁覆寫為空來隱藏或自訂） -->
+  {% block footer %}
+    {% include "_footer.html" %}
+  {% endblock %}
 
-  <!-- ✅ 主要內容區 -->
-  {% block content %}{% endblock %}
-
-  <!-- ✅ Bootstrap JS -->
+  <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
   {% if session.get("username") or force_refresh %}
-  <!-- ✅ 防止 BFCache / 前進後退還原舊畫面（登入或指定頁面才啟用） -->
   <script>
     window.addEventListener('pageshow', function (event) {
-      var navs = (performance.getEntriesByType && performance.getEntriesByType('navigation')) || [];
-      var nav = navs[0];
-      var isBackForward = nav && nav.type === 'back_forward';
-      if (event.persisted || isBackForward) {
-        window.location.reload();
-      }
+      var navs=(performance.getEntriesByType&&performance.getEntriesByType('navigation'))||[];
+      var nav=navs[0]; var isBackForward=nav&&nav.type==='back_forward';
+      if (event.persisted || isBackForward) { window.location.reload(); }
     });
   </script>
   {% endif %}

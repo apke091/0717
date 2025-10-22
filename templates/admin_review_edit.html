@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}編輯回顧 #{{ review.id }}{% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top:90px; max-width:980px">
+
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h3 class="mb-0">編輯回顧 #{{ review.id }}</h3>
+    <a class="btn btn-outline-secondary btn-sm btn-icon" href="{{ url_for('admin_reviews') }}">
+        <i class="bi bi-arrow-left"></i> 返回列表
+    </a>
+  </div>
+
+  <!-- 基本資料（同管理頁卡片風格） -->
+  <form class="form-card shadow-soft round-12 mb-4" method="POST" action="{{ url_for('admin_review_edit', rid=review.id) }}" enctype="multipart/form-data">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">標題</label>
+        <input class="form-control" name="title" value="{{ review.title }}" required>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">分類</label>
+        <select class="form-select" name="category_id" required>
+          {% for c in cats %}
+            <option value="{{ c.id }}" {% if c.id==review.category_id %}selected{% endif %}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">活動日期</label>
+        <input type="date" class="form-control" name="event_date" value="{{ review.event_date|strftime('%Y-%m-%d') if review.event_date else '' }}">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">狀態</label>
+        <select class="form-select" name="status">
+          <option value="published" {% if review.status=='published' %}selected{% endif %}>published</option>
+          <option value="draft" {% if review.status=='draft' %}selected{% endif %}>draft</option>
+        </select>
+      </div>
+
+      <div class="col-md-7">
+        <label class="form-label">封面（可選）</label>
+        <input type="file" class="form-control" name="cover" accept="image/*">
+        <div class="form-hint">建議 16:9，JPG/PNG/WEBP 皆可。</div>
+      </div>
+
+      {% if review.cover_path %}
+      <div class="col-md-5">
+        <div class="border rounded-3 overflow-hidden">
+          <img class="img-fluid"
+               src="{{ url_for('serve_upload', relpath=review.cover_path_480 or review.cover_path) }}"
+               srcset="{% if review.cover_path_480 %}{{ url_for('serve_upload', relpath=review.cover_path_480) }} 480w, {% endif %}{% if review.cover_path_960 %}{{ url_for('serve_upload', relpath=review.cover_path_960) }} 960w, {% endif %}{{ url_for('serve_upload', relpath=review.cover_path) }} 1600w"
+               sizes="(max-width: 992px) 90vw, 480px"
+               alt="{{ review.title }}">
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- 動作列：完全同按鈕風格 -->
+      <div class="col-12 d-flex align-items-center gap-2 mt-1">
+        <button type="submit" name="action" value="save" class="btn btn-brand btn-icon">
+          <i class="bi bi-save"></i> 儲存變更
+        </button>
+        <a class="btn btn-soft btn-icon" href="{{ url_for('admin_reviews') }}">
+          <i class="bi bi-x-circle"></i> 取消
+        </a>
+        {% if review %}
+        <button type="submit" name="action" value="delete"
+                class="btn btn-danger btn-icon ms-auto"
+                formaction="{{ url_for('admin_review_delete', rid=review.id) }}"
+                formmethod="POST"
+                onclick="return confirm('確定刪除這筆回顧嗎？')">
+          <i class="bi bi-trash3"></i> 刪除
+        </button>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+
+  <!-- 上傳媒體（同按鈕/卡片語彙） -->
+  <form class="form-card shadow-soft round-12 mb-4" method="POST" action="{{ url_for('admin_upload_review_media', rid=review.id) }}" enctype="multipart/form-data">
+    <label class="form-label">上傳相片 / 影片</label>
+    <div class="input-group" style="max-width:720px;">
+      <input type="file" class="form-control" name="media" id="media-input" multiple accept="image/*,video/*" required>
+      <button class="btn btn-brand btn-icon" type="submit"><i class="bi bi-cloud-upload"></i> 上傳</button>
+    </div>
+    <div class="form-hint">允許：jpg / jpeg / png / webp / mp4 / mov / m4v / webm。圖片會自動產 480/960 與 WEBP。</div>
+    <div id="pending-preview" class="row row-cols-2 row-cols-md-4 g-2 mt-2" style="display:none"></div>
+  </form>
+
+  <!-- 已上傳媒體（卡片外觀與刪除鈕一致） -->
+  {% if media_list %}
+  <div class="form-card shadow-soft round-12">
+    <div class="row row-cols-2 row-cols-md-4 g-2">
+      {% for m in media_list %}
+      <div class="col">
+        <div class="card border-0 shadow-soft round-12 overflow-hidden">
+          {% if m.mime and m.mime.startswith('image/') %}
+            <img class="w-100" style="aspect-ratio:4/3;object-fit:cover"
+                 loading="lazy"
+                 src="{{ url_for('serve_upload', relpath=m.file_path_480 or m.file_path) }}"
+                 srcset="{% if m.file_path_480 %}{{ url_for('serve_upload', relpath=m.file_path_480) }} 480w, {% endif %}{% if m.file_path_960 %}{{ url_for('serve_upload', relpath=m.file_path_960) }} 960w, {% endif %}{{ url_for('serve_upload', relpath=m.file_path) }} 1600w"
+                 sizes="(max-width: 576px) 50vw, (max-width: 992px) 25vw, 200px"
+                 alt="{{ m.file_name or '圖片' }}">
+          {% elif m.mime and m.mime.startswith('video/') %}
+            <video class="w-100" style="aspect-ratio:4/3;object-fit:cover" muted preload="metadata">
+              <source src="{{ url_for('serve_upload', relpath=m.file_path) }}" type="{{ m.mime }}">
+            </video>
+          {% else %}
+            <div class="d-flex align-items-center justify-content-center" style="width:100%;aspect-ratio:4/3;background:#f8fafc;">
+              <i class="bi bi-file-earmark-text" style="font-size:1.8rem;color:#94a3b8;"></i>
+            </div>
+          {% endif %}
+          <div class="small text-truncate px-2 py-2 text-muted">{{ m.file_name or '未命名' }}</div>
+          <form class="px-2 pb-2" method="POST"
+                action="{{ url_for('admin_delete_review_media', rid=review.id, mid=m.id) }}"
+                onsubmit="return confirm('確定刪除？')">
+            <button class="btn btn-danger btn-sm btn-icon w-100" type="submit">
+              <i class="bi bi-trash3"></i> 刪除
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+    <p class="text-muted">尚未上傳任何媒體。</p>
+  {% endif %}
+
+</div>
+
+<script>
+  // 即時預覽
+  const input = document.getElementById('media-input');
+  const pending = document.getElementById('pending-preview');
+  if (input) {
+    input.addEventListener('change', () => {
+      pending.innerHTML = '';
+      const files = input.files || [];
+      if (!files.length) { pending.style.display = 'none'; return; }
+      [...files].forEach(f => {
+        const url = URL.createObjectURL(f);
+        const isImg = (f.type || '').startsWith('image/');
+        const col = document.createElement('div');
+        col.className = 'col';
+        col.innerHTML = `
+          <div class="card border-0 shadow-soft round-12 overflow-hidden">
+            ${isImg ? `<img src="${url}" style="width:100%;aspect-ratio:4/3;object-fit:cover;">`
+                     : `<video src="${url}" muted style="width:100%;aspect-ratio:4/3;object-fit:cover;"></video>`}
+            <div class="small text-truncate p-2 text-muted">${f.name}</div>
+          </div>`;
+        pending.appendChild(col);
+      });
+      pending.style.display = '';
+    });
+  }
+</script>
+{% endblock %}

@@ -81,8 +81,7 @@
 
     const checkAll = document.getElementById('checkAll');
     const totalCell = document.getElementById('totalCell');
-    const CART_URL = "{{ url_for('cart') }}";
-    const API_UPDATE = "{{ url_for('api_cart_qty') }}";
+    const updateForm = document.getElementById('updateForm');
 
     function fmt(n){ return new Intl.NumberFormat('zh-TW').format(n) + ' 元'; }
 
@@ -110,55 +109,32 @@
       totalCell.textContent = fmt(total);
     }
 
-    // 更新 Offcanvas 徽章數字（所有行數量合計），並加上彈跳動畫
+    // 更新 offcanvas/連結徽章（用前端現有數量加總）
     function updateCartBadge() {
       let sum = 0;
       body.querySelectorAll('.qty-input').forEach(i => {
         sum += Math.max(0, parseInt(i.value, 10) || 0);
       });
-
       const link = document.getElementById('cartLink');
       if (!link) return;
-
       let badge = link.querySelector('.cart-badge');
-      if (sum <= 0) {
-        if (badge) badge.remove();
-        return;
-      }
-
+      if (sum <= 0) { if (badge) badge.remove(); return; }
       if (!badge) {
         badge = document.createElement('span');
         badge.className = 'ms-1 cart-badge';
         link.appendChild(badge);
       }
       badge.textContent = (sum <= 99) ? String(sum) : '99+';
-      // 微彈跳
-      badge.classList.remove('pop');
-      void badge.offsetWidth; // 重新觸發動畫
-      badge.classList.add('pop');
+      badge.classList.remove('pop'); void badge.offsetWidth; badge.classList.add('pop');
     }
 
-    // ===== 自動儲存到後端（含去抖 400ms） =====
-    function saveQty(pid, qty) {
-      return fetch(API_UPDATE, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ pid, qty })
-      }).then(r => r.json()).then(j => {
-        if (!j.ok) throw new Error(j.error || 'save_failed');
-        return j;
-      });
-    }
-
-    function queueSave(tr, pid, qty) {
-      clearTimeout(tr._saveTimer);
-      tr._saveTimer = setTimeout(() => {
-        saveQty(pid, qty).then(() => {
-          updateCartBadge();
-        }).catch(err => {
-          console.error('儲存數量失敗：', err);
-        });
-      }, 400);
+    // ===== 用「表單提交」而不是 JSON：去抖 500ms 自動送出 =====
+    let submitTimer = null;
+    function debounceSubmit() {
+      clearTimeout(submitTimer);
+      submitTimer = setTimeout(() => {
+        updateForm.submit();    // 直接提交整個 pid[] / qty[] 表單
+      }, 500);
     }
 
     // 事件：數量 +/- 按鈕
@@ -169,7 +145,6 @@
       if (!tr) return;
 
       const qtyInput = tr.querySelector('.qty-input');
-      const pid = tr.querySelector('input[name="pid[]"]').value;
       let qty = parseInt(qtyInput.value, 10) || 1;
 
       if (btn.classList.contains('btn-inc')) qty = qty + 1;
@@ -177,19 +152,19 @@
 
       qtyInput.value = qty;
       recalcAll();
-      queueSave(tr, pid, qty);
+      updateCartBadge();
+      debounceSubmit();
     });
 
-    // 事件：手動輸入數量（自動儲存）
+    // 事件：手動輸入數量（自動送出）
     body.addEventListener('input', (e) => {
       if (!e.target.classList.contains('qty-input')) return;
-      const tr = e.target.closest('tr');
-      const pid = tr.querySelector('input[name="pid[]"]').value;
       let qty = parseInt(e.target.value, 10) || 1;
       if (qty < 1) qty = 1;
       e.target.value = qty;
       recalcAll();
-      queueSave(tr, pid, qty);
+      updateCartBadge();
+      debounceSubmit();
     });
 
     // 勾選變動
@@ -197,8 +172,8 @@
       if (e.target.classList.contains('item-check')) {
         recalcAll();
         const items = [...body.querySelectorAll('.item-check')];
-        const checkAll = document.getElementById('checkAll');
-        if (checkAll) checkAll.checked = items.length > 0 && items.every(cb => cb.checked);
+        const allOn = items.length > 0 && items.every(cb => cb.checked);
+        if (checkAll) checkAll.checked = allOn;
       }
     });
 
@@ -214,11 +189,9 @@
     const checkoutForm = document.getElementById('checkoutForm');
     checkoutBtn?.addEventListener('click', () => {
       checkoutForm.querySelectorAll('input[type="hidden"]').forEach(i => i.remove());
-
       let count = 0;
       body.querySelectorAll('tr').forEach(tr => {
-        const checked = tr.querySelector('.item-check').checked;
-        if (!checked) return;
+        if (!tr.querySelector('.item-check').checked) return;
         const pid = tr.querySelector('input[name="pid[]"]').value;
         const qty = tr.querySelector('.qty-input').value;
 
@@ -232,17 +205,14 @@
 
         count++;
       });
-
-      if (count === 0) {
-        alert('請先勾選要結帳的商品');
-        return;
-      }
+      if (count === 0) { alert('請先勾選要結帳的商品'); return; }
       checkoutForm.submit();
     });
 
     // 初始計算
     recalcAll();
-    updateCartBadge(); // 讓徽章與頁面數量同步
+    updateCartBadge();
   })();
 </script>
+
 {% endblock %}

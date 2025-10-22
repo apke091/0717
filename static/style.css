@@ -1,3 +1,11 @@
+/* === 全站寬度統一：調整這裡就好 === */
+:root{
+  /* 把它改成你首頁的內容寬度（原本你多用 980px） */
+  --page-max: 980px;
+  /* 可選：後台或特定頁想更寬時用 */
+  --admin-max: 1180px;
+}
+
 body {
     margin: 0;
     font-family: "微軟正黑體", sans-serif;
@@ -24,7 +32,7 @@ body {
 
 .content {
     background-color: #f7f7f7;
-     font-family: "Microsoft JhengHei", Arial, sans-serif;
+    font-family: "Microsoft JhengHei", Arial, sans-serif;
     background-color: #f4f4f4;
     margin: 0;
     padding: 0;
@@ -49,13 +57,18 @@ nav a:hover {
     text-decoration: underline;
 }
 
-.container {
-    max-width: 900px;
-    margin: 30px auto;
-    background: white;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 0 8px rgba(0,0,0,0.1);
+/* 新建卡片外觀（要用再在頁面內部加一層 <div class="card-wrap">） */
+.card-wrap{
+  background:#fff;
+  padding:30px;
+  border-radius:8px;
+  box-shadow:0 0 8px rgba(0,0,0,0.1);
+  margin:30px 0;
+}
+
+/* 若有「後台頁」想更寬：把外層容器加 .admin-container 即可 */
+.admin-container{
+    max-width: var(--admin-max) !important;
 }
 
 h1, h2 {
@@ -226,4 +239,89 @@ a.nav-link .cart-badge.ring-purple{
   }
 }
 
+/* 文章/回顧內容裡的圖片不要超出容器 */
+.post-body img,
+.post-body video {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border-radius: 12px; /* 可移除 */
+}
 
+/* 強制 footer 不要卡片感 */
+.footer-neo,
+.footer-neo .container,
+.footer-neo .ft-legal {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+/* ===== Footer 深色版（只套用在 .footer-neo.footer-dark） ===== */
+.footer-neo.footer-dark{
+  background:
+    radial-gradient(800px 420px at 20% 0%, rgba(108,99,255,.18), transparent 55%),
+    radial-gradient(700px 380px at 85% -10%, rgba(255,138,212,.14), transparent 50%),
+    linear-gradient(180deg, #0f1220 0%, #12162a 100%);
+  border-top: 1px solid rgba(255,255,255,.06);
+  color: #e6e9f4;
+}
+.footer-neo.footer-dark .ft-title{
+  font-weight: 800; letter-spacing: .3px;
+  background: linear-gradient(135deg, #6b8cff, #9c6bff, #ff8ad4);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  text-shadow: 0 0 22px rgba(156,107,255,.25);
+}
+.footer-neo.footer-dark .ft-list{ list-style:none; padding:0; margin:0; }
+.footer-neo.footer-dark .ft-list li{ margin:.45rem 0; }
+.footer-neo.footer-dark .ft-list a{
+  color: #aab3d8;
+  border-bottom: 1px dashed transparent;
+  transition: color .18s ease, border-color .18s ease, transform .18s ease;
+  text-decoration: none;
+}
+.footer-neo.footer-dark .ft-list a:hover{
+  color: #ffffff;
+  border-color: rgba(156,107,255,.35);
+  transform: translateX(2px);
+}
+
+/* 社群膠囊 */
+.footer-neo.footer-dark .ft-social{
+  width:36px; height:36px; border-radius: 999px;
+  display:inline-flex; align-items:center; justify-content:center;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  color: #cdd6ff;
+  box-shadow: 0 8px 28px rgba(108,99,255,.20);
+  text-decoration:none;
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease, color .16s ease;
+}
+.footer-neo.footer-dark .ft-social:hover{
+  transform: translateY(-2px);
+  background: rgba(108,99,255,.18);
+  color: #fff;
+  box-shadow: 0 12px 34px rgba(156,107,255,.28);
+}
+/* 保留 LINE 圖示原色 */
+.footer-neo.footer-dark .ft-social img{ filter: none; }
+
+/* 版權列 */
+.footer-neo.footer-dark .ft-legal{
+  background: linear-gradient(90deg, rgba(107,140,255,.18), rgba(156,107,255,.18));
+  border-top: 1px solid rgba(255,255,255,.08)!important;
+}
+.footer-neo.footer-dark .ft-legal .text-muted{ color: #c9cffa!important; }
+
+/* 寬度沿用你的變數 */
+.footer-neo.footer-dark .container{ max-width: var(--page-max, 1080px); }
+
+/* 小尺寸細節 */
+@media (max-width: 575.98px){
+  .footer-neo.footer-dark .ft-title{ margin-top:.25rem; }
+  .footer-neo.footer-dark .ft-list li{ margin:.38rem 0; }
+}
+/* 需要使用時把 footer 推到首屏之外（至少滑一下才會看到） */
+.no-footer-first-fold main{
+  /* 視窗高度再加 180px，自己可調大或調小 */
+  min-height: calc(100vh + 180px);
+}

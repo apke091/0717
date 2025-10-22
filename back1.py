@@ -353,7 +353,7 @@
 #     folder = os.path.join(app.static_folder, "videos")
 #     os.makedirs(folder, exist_ok=True)
 #     videos = [f for f in os.listdir(folder) if f.endswith(".mp4")]
-#     return render_template("video.html", videos=videos)
+#     return render_template("reviews.html", videos=videos)
 #
 # # ✅ 啟動
 # if __name__ == "__main__":

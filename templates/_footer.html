@@ -1,0 +1,148 @@
+<!-- templates/_footer.html -->
+<footer class="footer-neo footer-dark mt-auto w-100">
+  <!-- 背景滿版到螢幕邊 -->
+  <div class="container-fluid px-0">
+
+    <!-- 內容置中 -->
+    <div class="container py-5">
+      <div class="row row-cols-2 row-cols-md-4 g-4">
+        <div>
+          <h6 class="ft-title mb-3">關於本會</h6>
+          <ul class="ft-list">
+            <li><a href="/about">關於本會</a></li>
+            <li><a href="/news">最新消息</a></li>
+            <li><a href="/reviews">課程回顧</a></li>
+            <li><a href="/downloads">文件下載</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h6 class="ft-title mb-3">課程與場地</h6>
+          <ul class="ft-list">
+            <li><a href="/courses">課程專區</a></li>
+            <li><a href="/rent">教室租借</a></li>
+            <li><a href="/faq">常見問題</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h6 class="ft-title mb-3">精油商城</h6>
+          <ul class="ft-list">
+            <li><a href="/shop">所有商品</a></li>
+            <li><a href="/cart">購物車</a></li>
+            <li><a href="/contact">訂單/客服</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h6 class="ft-title mb-3">聯絡資訊</h6>
+          <ul class="ft-list">
+            <li><a href="/contact">聯絡我們</a></li>
+            <li><span class="text-muted">E-mail：info@tn-aroma.org</span></li>
+            <li><span class="text-muted">電話：(06) 222-8504</span></li>
+            <li><span class="text-muted">地址：台南市府前路一段88號9樓</span></li>
+          </ul>
+
+          <div class="d-flex gap-2 mt-2">
+            <a class="ft-social" href="https://www.facebook.com/profile.php?id=100063997512043&locale=zh_TW" target="_blank" rel="noopener" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+            <a class="ft-social" href="https://www.instagram.com/mindaroma?igsh=aGsxNGZ4M25jODVl" target="_blank" rel="noopener" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+            <a class="ft-social" href="https://line.me/R/ti/p/你的ID" target="_blank" rel="noopener" aria-label="LINE">
+              <img src="https://img.icons8.com/color/48/000000/line-me.png" alt="LINE" style="width:18px;height:18px;">
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 最底列（也滿版） -->
+    <div class="ft-legal border-top">
+      <div class="container py-3 small d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2">
+        <div class="text-muted">© 2017 – <span id="ft-year"></span> 大台南芳薰香植物精油服務人員職業工會．All Rights Reserved.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>document.getElementById('ft-year').textContent = new Date().getFullYear();</script>
+
+  <style>
+  /* ===== Footer 深色低飽和版 ===== */
+  .footer-neo.footer-dark{
+    /* 主色設定（低飽和藍灰） */
+    --ft-bg:        #0f172a;  /* 背景深藍灰 */
+    --ft-bg-top:    #111827;  /* 上方更深一點，做輕微漸層 */
+    --ft-text:      #d3dae4;  /* 主要文字 */
+    --ft-muted:     #9aa3b2;  /* 次要文字 */
+    --ft-link:      #e4ecff;  /* 連結 */
+    --ft-link-hov:  #ffffff;  /* 連結 hover */
+    --ft-divider:   #1f2937;  /* 區隔線 */
+    --ft-bar:       #1c2240;  /* 版權條背景（低飽和深靛） */
+
+    color: var(--ft-text);
+    background: linear-gradient(180deg, var(--ft-bg-top), var(--ft-bg));
+    border-top: 1px solid var(--ft-divider);
+  }
+
+  /* 欄位標題 */
+  .footer-neo.footer-dark .ft-title{
+    font-weight: 800;
+    letter-spacing:.3px;
+    color: #e6e9f4;
+  }
+
+  /* 清單連結 */
+  .footer-neo.footer-dark .ft-list{ list-style:none; margin:0; padding:0; }
+  .footer-neo.footer-dark .ft-list li{ margin:.5rem 0; }
+  .footer-neo.footer-dark .ft-list a{
+    color: var(--ft-muted);
+    text-decoration: none;
+    border-bottom: 1px dashed transparent;
+    transition: color .18s ease, border-color .18s ease, transform .18s ease;
+  }
+  .footer-neo.footer-dark .ft-list a:hover{
+    color: var(--ft-link-hov);
+    border-color: rgba(255,255,255,.18);
+    transform: translateX(2px);
+  }
+
+  /* 淡字 */
+  .footer-neo.footer-dark .text-muted{ color: var(--ft-muted) !important; }
+
+  /* 社群膠囊（淡色、低飽和） */
+  .footer-neo.footer-dark .ft-social{
+    width:36px; height:36px; border-radius:999px;
+    display:inline-flex; align-items:center; justify-content:center;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.10);
+    color: #dbe2ef;
+    box-shadow: 0 8px 22px rgba(0,0,0,.25);
+    text-decoration:none;
+    transition: transform .16s ease, box-shadow .16s ease, background .16s ease, color .16s ease;
+  }
+  .footer-neo.footer-dark .ft-social:hover{
+    transform: translateY(-2px);
+    background: rgba(255,255,255,.12);
+    color: #ffffff;
+    box-shadow: 0 12px 28px rgba(0,0,0,.35);
+  }
+  .footer-neo.footer-dark .ft-social img{ filter: none; } /* LINE 保留原色 */
+
+  /* 最底版權列（深色、去高飽和） */
+  .footer-neo.footer-dark .ft-legal{
+    background: #151a33;            /* 純深色，比主體略亮一階 */
+    background-image: linear-gradient(90deg, rgba(255,255,255,.03), rgba(255,255,255,0));
+    color:#eef2f8;
+    border-top:1px solid rgba(255,255,255,.06)!important;
+  }
+  .footer-neo.footer-dark .ft-legal .text-muted{ color: #cfd6df !important; }
+
+  /* 容器寬度沿用你的變數 */
+  .footer-neo.footer-dark .container{ max-width: var(--page-max, 1080px); }
+
+  /* 手機微調 */
+  @media (max-width: 575.98px){
+    .footer-neo.footer-dark .ft-title{ margin-top:.25rem; }
+    .footer-neo.footer-dark .ft-list li{ margin:.4rem 0; }
+  }
+  </style>
+</footer>

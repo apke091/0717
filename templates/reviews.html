@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}課程回顧{% endblock %}
+{% block content %}
+
+<style>
+  /* ====== 課程回顧美化 ====== */
+  .reviews-hero-title{
+    font-weight: 900; letter-spacing: .5px;
+    background: linear-gradient(135deg,#6b8cff 0%, #9c6bff 55%, #ff8ad4 100%);
+    -webkit-background-clip:text; background-clip:text; color: transparent;
+  }
+  .pillbar .nav-link{
+    border-radius: 999px!important; padding: .45rem .9rem;
+    background: #f5f6fb; color:#485068; border:1px solid #eef0f7; transition:.2s ease;
+  }
+  .pillbar .nav-link.active{
+    background: linear-gradient(135deg,#6b8cff,#9c6bff);
+    border-color: transparent; color:#fff; box-shadow:0 8px 20px rgba(108,99,255,.25);
+  }
+  .pillbar .nav-link:hover{ transform: translateY(-2px); }
+
+  .review-card{
+    border:0; border-radius:18px; overflow:hidden;
+    box-shadow: 0 14px 40px rgba(83,70,186,.10);
+    transition: transform .25s ease, box-shadow .25s ease; background: #fff;
+  }
+  .review-card:hover{ transform: translateY(-4px); box-shadow: 0 18px 46px rgba(83,70,186,.15); }
+
+  .cover-wrap{ position: relative; }
+  .cover-img{
+    width:100%; height:210px; object-fit:cover; display:block;
+    transition: transform .35s ease, filter .35s ease;
+  }
+  .review-card:hover .cover-img{ transform: scale(1.03); filter: saturate(1.06); }
+
+  .cover-grad{ position:absolute; inset:0;
+    background: linear-gradient(180deg, rgba(0,0,0,.25) 0%, rgba(0,0,0,0) 45%, rgba(0,0,0,.35) 100%);
+    pointer-events:none;
+  }
+
+  .chip{
+    position:absolute; top:.65rem; left:.65rem;
+    backdrop-filter: blur(6px);
+    background: rgba(255,255,255,.75);
+    color:#2b2f43; font-size:.8rem; font-weight:700;
+    padding:.25rem .6rem; border-radius:999px; border:1px solid rgba(255,255,255,.6);
+  }
+  .date-pill{
+    position:absolute; bottom:.65rem; right:.65rem;
+    background: rgba(0,0,0,.55); color:#fff; font-size:.8rem;
+    padding:.25rem .55rem; border-radius:999px; letter-spacing:.2px;
+  }
+
+  .placeholder{
+    height:210px; display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(135deg,#f3f0ff,#eef5ff);
+    color:#7b85a0; font-weight:700;
+  }
+
+  .review-meta{ color:#7b85a0; font-size:.9rem; }
+  .review-title{
+    font-weight:800; line-height:1.35; margin-bottom:.35rem;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .review-summary{
+    color:#6b7280; margin-bottom:1rem;
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+    min-height:3.6em;
+  }
+
+  .pagination .page-link{
+    border-radius:10px!important; margin:0 .2rem; border:0; background:#f5f6fb; color:#485068;
+  }
+  .pagination .page-item.active .page-link{
+    background: linear-gradient(135deg,#6b8cff,#9c6bff); color:#fff;
+    box-shadow:0 8px 20px rgba(108,99,255,.25);
+  }
+
+  /* 內容區媒體防溢出（保留你的設定） */
+  .post-body img,
+  .post-body picture,
+  .post-body video,
+  .post-body iframe { max-width: 100% !important; height: auto !important; display: block; margin: 0 auto; border-radius: 12px; }
+  .post-body .ql-editor img,
+  .post-body .ProseMirror img,
+  .post-body figure img { max-width: 100% !important; height: auto !important; }
+  .post-body img { max-height: 70vh; object-fit: contain; }
+</style>
+
+<div class="container" style="margin-top:90px">
+  <h2 class="mb-1 reviews-hero-title">課程回顧</h2>
+  <p class="text-muted mb-4">過往活動精彩瞬間與重點整理</p>
+
+  <!-- 分類 Pills -->
+  <ul class="nav pillbar nav-pills mb-4 gap-2 flex-wrap">
+    <li class="nav-item">
+      <a class="nav-link {% if not cat_slug %}active{% endif %}" href="{{ url_for('reviews') }}">
+        全部
+        {% if total_count is defined and total_count %}<span class="badge bg-light text-dark ms-1">{{ total_count }}</span>{% endif %}
+      </a>
+    </li>
+    {% for c in categories %}
+    <li class="nav-item">
+      <a class="nav-link {% if cat_slug==c.slug %}active{% endif %}" href="{{ url_for('reviews', cat=c.slug) }}">
+        {{ c.name }}
+        {% if c.count is defined and c.count %}<span class="badge bg-light text-dark ms-1">{{ c.count }}</span>{% endif %}
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <!-- 卡片清單 -->
+  <div class="row g-3">
+    {% for x in items %}
+    <div class="col-12 col-md-6 col-lg-4">
+      <a class="card review-card h-100 text-decoration-none" href="{{ url_for('review_detail', rid=x.id) }}">
+        <!-- 封面 -->
+        <div class="cover-wrap">
+          {% if x.cover_path %}
+            <img
+              class="cover-img" loading="lazy" decoding="async"
+              src="{{ url_for('serve_upload', relpath=x.cover_path) }}"
+              {% if x.cover_path_480 or x.cover_path_960 %}
+              srcset="
+                {% if x.cover_path_480 %}{{ url_for('serve_upload', relpath=x.cover_path_480) }} 480w,{% endif %}
+                {% if x.cover_path_960 %}{{ url_for('serve_upload', relpath=x.cover_path_960) }} 960w,{% endif %}
+                {{ url_for('serve_upload', relpath=x.cover_path) }} 1600w"
+              sizes="(max-width: 576px) 90vw, (max-width: 992px) 44vw, 320px"
+              {% endif %}
+              alt="{{ x.title or '封面' }}">
+            <div class="cover-grad"></div>
+          {% else %}
+            <div class="placeholder">
+              <i class="bi bi-image me-2"></i> 無封面
+            </div>
+          {% endif %}
+
+          {% if x.category_name %}
+            <span class="chip">#{{ x.category_name }}</span>
+          {% endif %}
+          {% if x.event_date %}
+            <span class="date-pill">
+              {% if x.event_date is string %}
+                {{ x.event_date }}
+              {% else %}
+                {{ x.event_date.strftime("%Y-%m-%d") }}
+              {% endif %}
+            </span>
+          {% endif %}
+        </div>
+
+        <!-- 內容 -->
+        <div class="card-body">
+          <h5 class="review-title" title="{{ x.title }}">{{ x.title }}</h5>
+
+          {% if x.summary %}
+            {% set s = (x.summary | striptags) %}
+            <div class="review-summary">{{ s[:90] }}{% if s|length > 90 %}…{% endif %}</div>
+          {% endif %}
+
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="review-meta">
+              {% if x.event_date %}
+                <i class="bi bi-calendar-event me-1"></i>
+                {% if x.event_date is string %}
+                  {{ x.event_date }}
+                {% else %}
+                  {{ x.event_date.strftime("%Y/%m/%d") }}
+                {% endif %}
+              {% endif %}
+            </div>
+            <span class="btn btn-sm btn-soft">
+              看更多 <i class="bi bi-arrow-right-short"></i>
+            </span>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% else %}
+      <div class="col-12">
+        <div class="alert alert-light border d-flex align-items-center py-4" role="alert">
+          <i class="bi bi-emoji-neutral me-2 fs-5"></i>
+          目前沒有資料，之後再回來看看吧！
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- 分頁（可選：有 pagination 才顯示） -->
+  {% if pagination is defined and (pagination.pages or 0) > 1 %}
+  <nav class="mt-4" aria-label="課程回顧分頁">
+    <ul class="pagination justify-content-center">
+      <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('reviews', cat=cat_slug, page=pagination.prev_num) }}" aria-label="上一頁">
+          <span aria-hidden="true">&laquo;</span>
+        </a>
+      </li>
+      {% for p in range(1, pagination.pages + 1) %}
+      <li class="page-item {% if p == pagination.page %}active{% endif %}">
+        <a class="page-link" href="{{ url_for('reviews', cat=cat_slug, page=p) }}">{{ p }}</a>
+      </li>
+      {% endfor %}
+      <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('reviews', cat=cat_slug, page=pagination.next_num) }}" aria-label="下一頁">
+          <span aria-hidden="true">&raquo;</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block body_class %}no-footer-first-fold{% endblock %}
+{% block title %}課程回顧管理{% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top:90px; max-width:980px">
+
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h3 class="mb-0">課程回顧管理</h3>
+    <a class="btn btn-outline-secondary btn-sm btn-icon" href="{{ url_for('index') }}">
+        <i class="bi bi-arrow-left"></i> 回首頁
+    </a>
+  </div>
+
+  <!-- 新增分類 -->
+  <form class="form-card mb-4" method="POST" action="{{ url_for('admin_create_review_category') }}">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-6">
+        <label class="form-label">新增分類名稱</label>
+        <input class="form-control" name="name" placeholder="例如：實作課 / 講座 / 作品展" required>
+      </div>
+      <div class="col-auto">
+        <button class="btn btn-brand btn-icon"><i class="bi bi-plus-lg"></i> 新增分類</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- 新增回顧 -->
+  <form class="form-card mb-4" method="POST" action="{{ url_for('admin_reviews') }}" enctype="multipart/form-data">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label">標題</label>
+        <input class="form-control" name="title" required>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">分類</label>
+        <select class="form-select" name="category_id" required>
+          <option value="">請選擇</option>
+          {% for c in cats %}
+            <option value="{{ c.id }}">{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">活動日期</label>
+        <input type="date" class="form-control" name="event_date">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">狀態</label>
+        <select class="form-select" name="status">
+          <option value="published">published</option>
+          <option value="draft">draft</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">封面（可選）</label>
+        <input type="file" class="form-control" name="cover" accept="image/*">
+        <div class="form-hint">建議 16:9，JPG/PNG/WEBP 皆可。</div>
+      </div>
+      <div class="col-12">
+        <button class="btn btn-brand btn-icon"><i class="bi bi-plus-circle"></i> 新增回顧</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- 列表 -->
+  <div class="table-responsive shadow-soft round-12">
+    <table class="table table-hover table-borderless align-middle pretty mb-0">
+      <thead>
+        <tr>
+          <th style="width:70px;">ID</th>
+          <th>標題</th>
+          <th style="width:160px;">分類</th>
+          <th style="width:120px;">日期</th>
+          <th style="width:110px;">狀態</th>
+          <th style="width:90px;">媒體數</th>
+          <th style="width:260px;" class="text-center">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for r in rows %}
+        {% set status_cls = 'success' if r.status=='published' else 'warning' %}
+        <tr>
+          <td class="text-muted">#{{ r.id }}</td>
+          <td class="fw-semibold text-truncate" title="{{ r.title }}">{{ r.title }}</td>
+          <td class="text-muted">{{ r.category_name }}</td>
+          <td class="text-muted">{{ r.event_date or '' }}</td>
+          <td>
+            {% if r.status=='published' %}
+              <span class="badge bg-success-subtle text-success-emphasis rounded-pill px-3 py-2">published</span>
+            {% else %}
+              <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-3 py-2">draft</span>
+            {% endif %}
+          </td>
+          <td><span class="badge-soft">{{ r.media_count }}</span></td>
+          <td class="text-center text-nowrap">
+            <a class="btn btn-soft btn-sm btn-icon" href="{{ url_for('admin_review_edit', rid=r.id) }}">
+              <i class="bi bi-pencil-square"></i> 編輯/上傳媒體
+            </a>
+            <a class="btn btn-soft btn-sm btn-icon" href="{{ url_for('review_detail', rid=r.id) }}" target="_blank">
+              <i class="bi bi-eye"></i> 前台預覽
+            </a>
+            <form class="d-inline" method="POST" action="{{ url_for('admin_review_delete', rid=r.id) }}" onsubmit="return confirm('確定刪除此回顧？')">
+              <button class="btn btn-danger btn-sm btn-icon"><i class="bi bi-trash3"></i> 刪除</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      {% if not rows %}
+        <tr><td colspan="7" class="text-center text-muted py-4">目前尚無回顧資料。</td></tr>
+      {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

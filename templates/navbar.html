@@ -39,27 +39,16 @@
       <li class="nav-item"><a class="nav-link" href="{{ url_for('rent') }}">教室租借</a></li>
       <li class="nav-item"><a class="nav-link" href="{{ url_for('contact') }}">聯絡我們</a></li>
       <li class="nav-item"><a class="nav-link" href="{{ url_for('shop') }}">精油商城</a></li>
-      <li class="nav-item"><a class="nav-link" href="{{ url_for('video_gallery') }}">影音專區</a></li>
       <li class="nav-item"><a class="nav-link" href="{{ url_for('courses') }}">課程專區</a></li>
-      </ul>
+
+      <!-- ✅ 把原本課程專區改成課程回顧 -->
+      <li class="nav-item">
+        <a class="nav-link {% if request.path.startswith('/reviews') %}active{% endif %}"
+           href="{{ url_for('reviews') }}">課程回顧</a>
+      </li>
+    </ul>
 
 
-    {% if session.get("username") %}
-      <hr>
-      <!-- 購物車 -->
-      <ul class="nav flex-column mb-3">
-        <li class="nav-item">
-  <a class="nav-link d-inline-flex align-items-center" href="{{ url_for('cart') }}" id="cartLink">
-    🛒 購物車
-    {% if (cart_count|int) > 0 %}
-      <span class="ms-1 cart-badge">{{ (cart_count|int) if (cart_count|int) <= 99 else '99+' }}</span>
-    {% endif %}
-  </a>
-</li>
-
-
-      </ul>
-    {% endif %}
 
     {% if session.get('role') == 'admin' %}
       <hr>
@@ -77,51 +66,56 @@
               <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_users') }}">帳號管理</a></li>
               <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_products') }}">商品管理</a></li>
               <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_rents') }}">確認租借資訊</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('upload_file') }}">上傳檔案</a></li>
-              <li class="nav-item"><a class="nav-link" href="{{ url_for('upload_video') }}">上傳影片</a></li>
-                <li class="nav-item"><a class="nav-link" href="{{ url_for('edit_about') }}">編輯關於</a></li>              <li class="nav-item"><a class="nav-link" href="{{ url_for('upload_video') }}">上傳影片</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('upload_file') }}">上傳檔案</a></li>
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('edit_about') }}">編輯關於</a></li>
               <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_courses') }}">課程資訊</a></li>
-
+              <!-- ✅ 新增課程回顧管理 -->
+              <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_reviews') }}">課程回顧管理</a></li>
             </ul>
           </div>
         </li>
       </ul>
     {% endif %}
+
+       {% if session.get("username") %}
+      <hr>
+      <!-- 購物車 -->
+      <ul class="nav flex-column mb-3">
+        <li class="nav-item">
+          <a class="nav-link d-inline-flex align-items-center" href="{{ url_for('cart') }}" id="cartLink">
+            🛒 購物車
+            {% if (cart_count|int) > 0 %}
+              <span class="ms-1 cart-badge">{{ (cart_count|int) if (cart_count|int) <= 99 else '99+' }}</span>
+            {% endif %}
+          </a>
+        </li>
+      </ul>
+    {% endif %}
+
   </div>
 </div>
 
 <!-- CSS -->
 <style>
-  .arrow {
-    transition: transform 0.2s ease;
+  .arrow { transition: transform 0.2s ease; }
+  .nav-link[aria-expanded="true"] .arrow { transform: rotate(90deg); } /* ▶ 轉 ▼ */
+
+  /* 管理子選單字體顏色改成灰色 */
+  .admin-submenu .nav-link {
+    color: #6c757d !important;
+    padding: 5px 15px;
   }
-  .nav-link[aria-expanded="true"] .arrow {
-    transform: rotate(90deg); /* ▶ 轉 ▼ */
+  .admin-submenu .nav-link:hover {
+    background-color: #e9ecef;
+    color: #000;
+    border-radius: 3px;
   }
 
- /* 1️⃣ 管理子選單字體顏色改成灰色 */
-.admin-submenu .nav-link {
-  color: #6c757d !important;  /* 灰色字 */
-  padding: 5px 15px;
-}
-.admin-submenu .nav-link:hover {
-  background-color: #e9ecef; /* hover 時淺灰底 */
-  color: #000; /* hover 時字變黑 */
-  border-radius: 3px;
-}
+  /* Offcanvas 關閉按鈕背景顏色 */
+  .offcanvas .btn-close { background-color: #dee2e6; border-radius: 50%; opacity: 1; }
+  .offcanvas .btn-close:hover { background-color: #cce5ff; }
 
-/* 2️⃣ Offcanvas 關閉按鈕背景顏色 */
-.offcanvas .btn-close {
-  background-color: #dee2e6;   /* 淡灰色背景 */
-  border-radius: 50%;          /* 圓形背景 */
-  opacity: 1;                  /* 確保顯示 */
-}
-.offcanvas .btn-close:hover {
-  background-color: #cce5ff;   /* hover 時淡藍色 */
-}
-
-
-  /* ✅ 漢堡選單藍色字 hover 效果 */
+  /* 漢堡選單藍色字 hover 效果 */
   .offcanvas-body .nav-link {
     color: blue;
     text-decoration: none;
@@ -130,7 +124,7 @@
     border-radius: 5px;
   }
   .offcanvas-body .nav-link:hover {
-    background-color: #e9ecef; /* 灰色背景 */
-    color: blue;               /* 文字保持藍色 */
+    background-color: #e9ecef;
+    color: blue;
   }
 </style>
