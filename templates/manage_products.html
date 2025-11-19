@@ -3,56 +3,81 @@
 
 {% block content %}
 <div class="container" style="margin-top: 90px">
-<h2>📦 商品管理</h2>
+  <h2>📦 商品管理</h2>
 
-<!-- ✅ 新增商品表單 -->
-<div class="card p-3 mb-4" style="max-width: 600px;">
-  <h5 class="card-title mb-3">新增商品</h5>
-  <form method="POST">
-    <div class="row mb-3">
-      <div class="col-md-4">
-        <label for="pid" class="form-label">商品 ID</label>
-        <input type="text" class="form-control" name="pid" id="pid" required>
+  <!-- 新增商品表單 -->
+  <div class="card p-3 mb-4" style="max-width: 600px;">
+    <h5 class="card-title mb-3">新增商品</h5>
+    <form method="POST">
+      <div class="row mb-3">
+        <div class="col-md-4">
+          <label for="pid" class="form-label">商品 ID</label>
+          <input type="text" class="form-control" name="pid" id="pid" required>
+        </div>
+        <div class="col-md-4">
+          <label for="name" class="form-label">名稱</label>
+          <input type="text" class="form-control" name="name" id="name" required>
+        </div>
+        <div class="col-md-4">
+          <label for="price" class="form-label">價格</label>
+          <input type="number" class="form-control" name="price" id="price" min="0" required>
+        </div>
       </div>
-      <div class="col-md-4">
-        <label for="name" class="form-label">名稱</label>
-        <input type="text" class="form-control" name="name" id="name" required>
-      </div>
-      <div class="col-md-4">
-        <label for="price" class="form-label">價格</label>
-        <input type="number" class="form-control" name="price" id="price" required>
-      </div>
-    </div>
-    <button type="submit" class="btn btn-success">新增商品</button>
-  </form>
+      <button type="submit" class="btn btn-success">新增商品</button>
+    </form>
+  </div>
+
+  <!-- 商品清單 -->
+  <h5>商品列表</h5>
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped align-middle">
+      <thead class="table-light">
+        <tr>
+          <th style="width:120px;">商品 ID</th>
+          <th>名稱</th>
+          <th style="width:160px;">價格</th>
+          <th style="width:200px;">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for p in products %}
+        <tr>
+          <td class="text-muted">{{ p["pid"] }}</td>
+
+          <!-- 就地編輯表單（名稱＋價格） -->
+          <td>
+            <form class="d-flex gap-2 align-items-center"
+                  method="POST"
+                  action="{{ url_for('update_product', pid=p['pid']) }}">
+              <input name="name"
+                     class="form-control form-control-sm"
+                     value="{{ p['name'] }}"
+                     required>
+          </td>
+          <td>
+              <input name="price"
+                     type="number"
+                     min="0"
+                     class="form-control form-control-sm text-end"
+                     value="{{ p['price'] }}"
+                     required>
+          </td>
+          <td>
+              <button class="btn btn-primary btn-sm me-2">儲存</button>
+            </form>
+
+            <!-- 刪除（獨立表單避免嵌套） -->
+            <form class="d-inline"
+                  method="POST"
+                  action="{{ url_for('delete_product', pid=p['pid']) }}"
+                  onsubmit="return confirm('確定要刪除這個商品嗎？')">
+              <button class="btn btn-danger btn-sm">刪除</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
-
-<!-- ✅ 商品清單 -->
-<h5>商品列表</h5>
-<table class="table table-bordered table-striped">
-  <thead>
-    <tr>
-      <th>商品 ID</th>
-      <th>名稱</th>
-      <th>價格</th>
-      <th>操作</th>
-    </tr>
-  </thead>
-  <tbody>
-  {% for p in products %}
-  <tr>
-    <td>{{ p["pid"] }}</td>
-    <td>{{ p["name"] }}</td>
-    <td>{{ p["price"] }}</td>
-    <td>
-      <form method="POST" action="{{ url_for('delete_product', pid=p['pid']) }}" onsubmit="return confirm('確定要刪除這個商品嗎？')">
-        <button class="btn btn-sm btn-danger">刪除</button>
-      </form>
-    </td>
-  </tr>
-  {% endfor %}
-</tbody>
-</table>
-</div>
-
 {% endblock %}

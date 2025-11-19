@@ -217,10 +217,21 @@ def ensure_downloads_table():
 def load_products_from_db():
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute("SELECT * FROM products")
+    cursor.execute("""
+        SELECT pid, name, price
+        FROM products
+        ORDER BY pid ASC;
+    """)
     rows = cursor.fetchall()
     conn.close()
-    return {row["pid"]: {"name": row["name"], "price": int(row["price"])} for row in rows}
+    return {
+        row["pid"]: {
+            "name": row["name"],
+            "price": int(row["price"])
+        }
+        for row in rows
+    }
+
 
 # ✅ 自動刷新 session
 @app.before_request
@@ -371,7 +382,6 @@ def contact():
             flash("⚠️ 驗證碼錯誤，請再試一次", "danger"); return redirect(url_for("contact"))
         if not EMAIL_RE.match(email or ""):
             flash("❌ Email 格式不正確，請重新輸入", "danger"); return redirect(url_for("contact"))
-
         try:
             conn = get_db_connection()
             with conn:
@@ -761,24 +771,69 @@ def remove_from_cart(pid):
 def manage_products():
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
+
     if request.method == "POST":
-        pid = request.form.get("pid")
-        name = request.form.get("name")
-        price = request.form.get("price")
+        pid = (request.form.get("pid") or "").strip()
+        name = (request.form.get("name") or "").strip()
+        price = (request.form.get("price") or "").strip()
+
         if not pid or not name or not price:
-            flash("請填寫所有欄位")
+            flash("請填寫所有欄位", "danger")
         else:
             try:
-                cursor.execute("INSERT INTO products (pid, name, price) VALUES (%s, %s, %s)",
-                               (pid, name, int(price)))
-                conn.commit(); flash("✅ 商品新增成功"); return redirect(url_for("manage_products"))
+                cursor.execute(
+                    "INSERT INTO products (pid, name, price) VALUES (%s, %s, %s)",
+                    (pid, name, int(price))
+                )
+                conn.commit()
+                flash("✅ 商品新增成功", "success")
+                conn.close()
+                return redirect(url_for("manage_products"))
             except psycopg2.IntegrityError:
-                conn.rollback(); flash("商品 ID 已存在")
-    cursor.execute("SELECT * FROM products")
+                conn.rollback()
+                flash("商品 ID 已存在", "warning")
+            except ValueError:
+                flash("價格必須是整數", "danger")
+
+    # 這裡重點：依 pid 的數字大小排序（pid 是 TEXT）
+    cursor.execute("""
+        SELECT pid, name, price
+        FROM products
+        ORDER BY (pid::int) ASC
+    """)
     products = cursor.fetchall()
     conn.close()
     return render_template("manage_products.html", products=products)
 
+
+# 就地編輯：更新商品名稱與價格
+@app.post("/products/<pid>/update")
+@admin_required
+def update_product(pid):
+    name = (request.form.get("name") or "").strip()
+    price_raw = (request.form.get("price") or "").strip()
+
+    if not name or not price_raw:
+        flash("名稱與價格不得為空", "danger")
+        return redirect(url_for("manage_products"))
+    try:
+        price = int(price_raw)
+        if price < 0:
+            raise ValueError()
+    except ValueError:
+        flash("價格必須是非負整數", "danger")
+        return redirect(url_for("manage_products"))
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE products SET name=%s, price=%s WHERE pid=%s", (name, price, pid))
+    conn.commit()
+    conn.close()
+    flash("已更新商品", "success")
+    return redirect(url_for("manage_products"))
+
+
+# 刪除（維持你原本的作法）
 @app.route("/delete_product/<pid>", methods=["POST"])
 @admin_required
 def delete_product(pid):
@@ -786,8 +841,10 @@ def delete_product(pid):
     cursor = conn.cursor()
     cursor.execute("DELETE FROM cart_items WHERE product_id = %s", (pid,))
     cursor.execute("DELETE FROM products WHERE pid = %s", (pid,))
-    conn.commit(); conn.close()
-    flash("🗑️ 商品與相關購物車項目已刪除"); return redirect(url_for("manage_products"))
+    conn.commit()
+    conn.close()
+    flash("🗑️ 商品與相關購物車項目已刪除", "success")
+    return redirect(url_for("manage_products"))
 
 @app.route("/clear_cart", methods=["POST"])
 def clear_cart():

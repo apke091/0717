@@ -1,0 +1,339 @@
+/* === 全站寬度統一：調整這裡就好 === */
+:root{
+  /* 把它改成你首頁的內容寬度（原本你多用 980px） */
+  --page-max: 980px;
+  /* 可選：後台或特定頁想更寬時用 */
+  --admin-max: 1180px;
+  --brand-purple: #7c3aed;
+}
+
+/* 讓變數真的套用到 Bootstrap 容器 */
+.container, .container-sm, .container-md, .container-lg, .container-xl, .container-xxl{
+  max-width: var(--page-max);
+}
+
+/* 若有「後台頁」想更寬：把外層容器加 .admin-container 即可 */
+.admin-container{
+  max-width: var(--admin-max) !important;
+}
+
+body {
+  margin: 0;
+  font-family: "Noto Sans TC","微軟正黑體","Microsoft JhengHei",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.sidebar {
+  width: 220px;
+  background-color: #557A95; /*← 這裡改顏色 */
+  min-height: 100vh;
+}
+
+.sidebar .nav-link {
+  font-size: 18px;
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.3s;
+}
+.sidebar .nav-link:hover,
+.sidebar .nav-link:focus-visible {
+  background-color: #3e5a6d;
+  text-decoration: none;
+  outline: none;
+}
+
+.content {
+  background-color: #f4f4f4; /* 與前面重複者擇一保留 */
+  margin: 0;
+  padding: 0;
+}
+
+nav {
+  background-color: #333;
+  color: white;
+  padding: 10px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 999;
+}
+nav a {
+  color: white;
+  text-decoration: none;
+  margin-right: 15px;
+}
+nav a:hover,
+nav a:focus-visible {
+  text-decoration: underline;
+  outline: none;
+}
+
+/* 新建卡片外觀（要用再在頁面內部加一層 <div class="card-wrap">） */
+.card-wrap{
+  background:#fff;
+  padding:30px;
+  border-radius:12px;
+  box-shadow:0 0 8px rgba(0,0,0,0.08);
+  margin:30px 0;
+}
+
+h1, h2 { color: #333; }
+
+form label {
+  display: block;
+  margin: 10px 0 5px;
+}
+
+input[type="text"], input[type="password"], select {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+  margin-bottom: 15px;
+}
+
+/* 不要把 Bootstrap 的 .btn 洗掉 */
+button:not(.btn) {
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color .2s ease, box-shadow .2s ease, transform .02s ease;
+}
+button:not(.btn):hover { background-color: #2a66c9; }
+button:not(.btn):active { transform: translateY(1px); }
+button:not(.btn):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(66,133,244,.35);
+}
+
+ul { list-style: none; padding: 0; }
+
+video { display: block; margin-bottom: 10px; }
+
+/* ================= 購物車數量徽章 ================= */
+/* 基礎樣式（留著不動） */
+.cart-badge{
+  display:inline-block !important;
+  min-width:1.6em;
+  padding:2px 10px;
+  border-radius:999px;
+  color:#fff;
+  font-weight:700;
+  font-size:.78rem;
+  line-height:1.2;
+  border:1px solid rgba(255,255,255,.45);
+  text-shadow:0 1px 0 rgba(0,0,0,.15);
+  box-shadow:0 2px 10px rgba(0,0,0,.15);
+  transform-origin:center;
+}
+
+/* 統一一份 keyframes，供所有 .pop 使用 */
+@keyframes cartPop{
+  0%{transform:scale(.9)}
+  70%{transform:scale(1.08)}
+  100%{transform:scale(1)}
+}
+.cart-badge.pop,
+a.nav-link .cart-badge.pop{ animation:cartPop .22s ease; }
+
+/* 漸層主題：挑一個加在 .cart-badge 後面即可 */
+.cart-badge.g-purple {
+  background:linear-gradient(135deg,#c084fc,#7c3aed);
+  box-shadow:0 2px 10px rgba(124,58,237,.35);
+}
+
+/* 白色膠囊（高對比、乾淨） */
+a.nav-link .cart-badge{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:1.6em; padding:2px 10px; border-radius:9999px;
+  background:#ffffff;                          /* 純白底 */
+  color:#1f2937 !important;                    /* 深灰字，對比高 */
+  font-weight:700; font-size:.78rem; line-height:1.1;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  border:1px solid rgba(2,6,23,.08);           /* 超細灰框 */
+  box-shadow:
+    0 8px 18px rgba(2,6,23,.10),               /* 柔和外陰影 */
+    inset 0 1px 0 rgba(255,255,255,.9);        /* 內亮邊 */
+}
+a.nav-link .cart-badge.ring-purple{
+  border-color: rgba(124,58,237,.35);          /* #7c3aed */
+  box-shadow:
+    0 0 0 2px rgba(124,58,237,.15),            /* 外發光細圈 */
+    0 8px 18px rgba(2,6,23,.10),
+    inset 0 1px 0 rgba(255,255,255,.9);
+}
+
+/* ================= Hero arrows — 玻璃感白箭頭 ================= */
+.hero-carousel .carousel-control-prev,
+.hero-carousel .carousel-control-next {
+  /* 可調參數 */
+  --hero-arrow-size: 52px;
+  --hero-arrow-bg: rgba(16,16,16,.45);
+  --hero-arrow-bg-hover: rgba(16,16,16,.70);
+  --hero-arrow-border: rgba(255,255,255,.35);
+  --hero-arrow-icon: #fff;
+
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--hero-arrow-size);
+  height: var(--hero-arrow-size);
+  opacity: 1;                      /* 永遠顯示（不要淡出） */
+  border-radius: 999px;
+  background: var(--hero-arrow-bg);
+  border: 1px solid var(--hero-arrow-border);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 8px 22px rgba(0,0,0,.25);
+  transition: background .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+.hero-carousel .carousel-control-prev { left: 12px; }
+.hero-carousel .carousel-control-next { right: 12px; }
+
+.hero-carousel .carousel-control-prev:hover,
+.hero-carousel .carousel-control-next:hover {
+  background: var(--hero-arrow-bg-hover);
+  transform: translateY(-50%) scale(1.06);
+  box-shadow: 0 12px 30px rgba(0,0,0,.35);
+}
+.hero-carousel .carousel-control-prev:active,
+.hero-carousel .carousel-control-next:active {
+  transform: translateY(-50%) scale(.96);
+}
+
+/* 取代 Bootstrap 預設箭頭圖示，改用白色 chevron */
+.hero-carousel .carousel-control-prev-icon,
+.hero-carousel .carousel-control-next-icon {
+  width: 18px;
+  height: 18px;
+  background: var(--hero-arrow-icon);
+  background-image: none;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+          mask-position: center;
+}
+.hero-carousel .carousel-control-prev-icon {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M10 3 L5 8 L10 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+          mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M10 3 L5 8 L10 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.hero-carousel .carousel-control-next-icon {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 3 L11 8 L6 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+          mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 3 L11 8 L6 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* 客製焦點樣式（移除預設藍色 focus ring） */
+.hero-carousel .carousel-control-prev:focus-visible,
+.hero-carousel .carousel-control-next:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.6);
+}
+
+/* 手機調小一點 */
+@media (max-width: 576px) {
+  .hero-carousel .carousel-control-prev,
+  .hero-carousel .carousel-control-next {
+    --hero-arrow-size: 44px;
+  }
+}
+
+/* 文章/回顧內容裡的媒體不要超出容器 */
+.post-body img,
+.post-body video {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border-radius: 12px; /* 可移除 */
+}
+
+/* ========= Footer 深色版 ========= */
+.footer-neo,
+.footer-neo .container,
+.footer-neo .ft-legal {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.footer-neo.footer-dark{
+  background:
+    radial-gradient(800px 420px at 20% 0%, rgba(108,99,255,.18), transparent 55%),
+    radial-gradient(700px 380px at 85% -10%, rgba(255,138,212,.14), transparent 50%),
+    linear-gradient(180deg, #0f1220 0%, #12162a 100%);
+  border-top: 1px solid rgba(255,255,255,.06);
+  color: #e6e9f4;
+}
+.footer-neo.footer-dark .ft-title{
+  font-weight: 800; letter-spacing: .3px;
+  background: linear-gradient(135deg, #6b8cff, #9c6bff, #ff8ad4);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  text-shadow: 0 0 22px rgba(156,107,255,.25);
+}
+.footer-neo.footer-dark .ft-list{ list-style:none; padding:0; margin:0; }
+.footer-neo.footer-dark .ft-list li{ margin:.45rem 0; }
+.footer-neo.footer-dark .ft-list a{
+  color: #aab3d8;
+  border-bottom: 1px dashed transparent;
+  transition: color .18s ease, border-color .18s ease, transform .18s ease;
+  text-decoration: none;
+}
+.footer-neo.footer-dark .ft-list a:hover,
+.footer-neo.footer-dark .ft-list a:focus-visible{
+  color: #ffffff;
+  border-color: rgba(156,107,255,.35);
+  transform: translateX(2px);
+  outline: none;
+}
+
+/* 社群膠囊 */
+.footer-neo.footer-dark .ft-social{
+  width:36px; height:36px; border-radius: 999px;
+  display:inline-flex; align-items:center; justify-content:center;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  color: #cdd6ff;
+  box-shadow: 0 8px 28px rgba(108,99,255,.20);
+  text-decoration:none;
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease, color .16s ease;
+}
+.footer-neo.footer-dark .ft-social:hover{
+  transform: translateY(-2px);
+  background: rgba(108,99,255,.18);
+  color: #fff;
+  box-shadow: 0 12px 34px rgba(156,107,255,.28);
+}
+/* 保留 LINE 圖示原色 */
+.footer-neo.footer-dark .ft-social img{ filter: none; }
+
+/* 版權列 */
+.footer-neo.footer-dark .ft-legal{
+  background: linear-gradient(90deg, rgba(107,140,255,.18), rgba(156,107,255,.18));
+  border-top: 1px solid rgba(255,255,255,.08)!important;
+}
+.footer-neo.footer-dark .ft-legal .text-muted{ color: #c9cffa!important; }
+
+/* 寬度沿用你的變數 */
+.footer-neo.footer-dark .container{ max-width: var(--page-max, 1080px); }
+
+/* 小尺寸細節 */
+@media (max-width: 575.98px){
+  .footer-neo.footer-dark .ft-title{ margin-top:.25rem; }
+  .footer-neo.footer-dark .ft-list li{ margin:.38rem 0; }
+}
+
+/* 需要使用時把 footer 推到首屏之外（至少滑一下才會看到） */
+.no-footer-first-fold main{
+  /* 視窗高度再加 180px，自己可調大或調小 */
+  min-height: calc(100vh + 180px);
+}
+
+/* ========== 動畫可及性：減少動效 ========= */
+@media (prefers-reduced-motion: reduce){
+  * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}

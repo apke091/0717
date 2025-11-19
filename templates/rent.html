@@ -16,6 +16,12 @@
   .hint{ color:#6b6b82; font-size:.9rem; }
   .btn-primary{ background:#835dff; border-color:#835dff; border-radius:12px; padding:.6rem 1.1rem; }
   .btn-primary:hover{ background:#6f49ff; border-color:#6f49ff; }
+
+  /* Email 建議清單，避免太高 */
+  #email-suggestions {
+    max-height: 180px;
+    overflow-y: auto;
+  }
 </style>
 
 <div class="container-fluid" style="margin-top:90px;">
@@ -48,7 +54,7 @@
                 <select id="mm"   class="form-select" style="max-width:110px;"></select>
                 <select id="dd"   class="form-select" style="max-width:110px;"></select>
               </div>
-              <div class="hint mt-1">只會顯示今天之後的月份與日期；已滿日期不會出現。</div>
+              <div class="hint mt-1">未出現日期代表已有人申請租借。</div>
               <input type="hidden" id="date" name="date" required>
             </div>
 
@@ -84,14 +90,20 @@
               <div class="invalid-feedback">請輸入正確的手機號碼（09xx-xxx-xxx）</div>
             </div>
 
-            <!-- Email（必填） -->
-            <div class="mb-3">
+            <!-- Email（必填） + 建議清單 -->
+            <div class="mb-3 position-relative">
               <label class="form-label">Email</label>
               <input id="email" name="email" type="email" class="form-control"
                      placeholder="name@example.com" required
                      inputmode="email"
                      pattern="^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$">
               <div class="invalid-feedback">請輸入正確的 Email</div>
+
+              <!-- 建議選單（預設隱藏） -->
+              <ul id="email-suggestions"
+                  class="list-group position-absolute w-100 shadow-sm"
+                  style="z-index:1060; top:100%; left:0; display:none;">
+              </ul>
             </div>
 
             <!-- 備註 -->
@@ -126,6 +138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const nameI  = document.getElementById('name');
   const phoneI = document.getElementById('phone');
   const emailI = document.getElementById('email');
+  const emailSug = document.getElementById('email-suggestions');
 
   // ---- API ----
   const API_TS       = "{{ url_for('api_rent_timeslots') }}";
@@ -233,82 +246,81 @@ document.addEventListener('DOMContentLoaded', async () => {
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   let triedSubmit = false;
 
- // === 電話輸入：格式化 + 智慧刪除（Backspace/Delete 直接刪數字，不會卡在 '-'） ===
-(function () {
-  if (!phoneI) return;
+  // === 電話輸入：格式化 + 智慧刪除（Backspace/Delete 直接刪數字，不會卡在 '-'） ===
+  (function () {
+    if (!phoneI) return;
 
-  function fmt(digits) {
-    digits = digits.replace(/\D/g, '').slice(0, 10); // 09xxxxxxxx 共 10 碼
-    if (digits.length <= 4) return digits;
-    if (digits.length <= 7) return digits.slice(0,4) + '-' + digits.slice(4);
-    return digits.slice(0,4) + '-' + digits.slice(4,7) + '-' + digits.slice(7);
-  }
+    function fmt(digits) {
+      digits = digits.replace(/\D/g, '').slice(0, 10); // 09xxxxxxxx 共 10 碼
+      if (digits.length <= 4) return digits;
+      if (digits.length <= 7) return digits.slice(0,4) + '-' + digits.slice(4);
+      return digits.slice(0,4) + '-' + digits.slice(4,7) + '-' + digits.slice(7);
+    }
 
-  // 將「第 k 顆數字之後」換算回格式字串中的游標位置
-  function caretPosForKthDigit(afterStr, k) {
-    if (k < 0) return 0;
-    let count = 0;
-    for (let i = 0; i < afterStr.length; i++) {
-      if (/\d/.test(afterStr[i])) {
-        if (count === k) return i + 1; // 在第 k 顆數字「後面」
-        count++;
+    // 將「第 k 顆數字之後」換算回格式字串中的游標位置
+    function caretPosForKthDigit(afterStr, k) {
+      if (k < 0) return 0;
+      let count = 0;
+      for (let i = 0; i < afterStr.length; i++) {
+        if (/\d/.test(afterStr[i])) {
+          if (count === k) return i + 1; // 在第 k 顆數字「後面」
+          count++;
+        }
       }
-    }
-    return afterStr.length;
-  }
-
-  // keydown：讓 Backspace/Delete 直接刪掉數字
-  phoneI.addEventListener('keydown', (e) => {
-    if (e.key !== 'Backspace' && e.key !== 'Delete') return;
-    const val = phoneI.value;
-    const posL = phoneI.selectionStart;
-    const posR = phoneI.selectionEnd;
-
-    // 反白選取：交給瀏覽器預設行為
-    if (posL !== posR) return;
-
-    const digitsAll = val.replace(/\D/g, '');
-    const digitsBefore = val.slice(0, posL).replace(/\D/g, '').length;
-
-    if (e.key === 'Backspace') {
-      if (digitsBefore === 0) return;            // 沒得刪
-      e.preventDefault();
-      const newDigits = digitsAll.slice(0, digitsBefore - 1) + digitsAll.slice(digitsBefore);
-      const after = fmt(newDigits);
-      const newCaret = caretPosForKthDigit(after, digitsBefore - 1);
-      phoneI.value = after;
-      phoneI.setSelectionRange(newCaret, newCaret);
-    } else if (e.key === 'Delete') {
-      if (digitsBefore >= digitsAll.length) return; // 右側沒數字
-      e.preventDefault();
-      const newDigits = digitsAll.slice(0, digitsBefore) + digitsAll.slice(digitsBefore + 1);
-      const after = fmt(newDigits);
-      // Delete 後游標保持在「刪掉那顆的原位置」之前
-      const newCaret = caretPosForKthDigit(after, digitsBefore - 1) + 1;
-      phoneI.value = after;
-      phoneI.setSelectionRange(newCaret, newCaret);
+      return afterStr.length;
     }
 
-    if (triedSubmit) validateAndMark();
-  });
+    // keydown：讓 Backspace/Delete 直接刪掉數字
+    phoneI.addEventListener('keydown', (e) => {
+      if (e.key !== 'Backspace' && e.key !== 'Delete') return;
+      const val = phoneI.value;
+      const posL = phoneI.selectionStart;
+      const posR = phoneI.selectionEnd;
 
-  // input：一般輸入（數字/貼上）即時格式化並盡量保留游標
-  phoneI.addEventListener('input', (e) => {
-    const raw = e.target.value;
-    const caret = e.target.selectionStart;
-    const digits = raw.replace(/\D/g, '').slice(0, 10);
-    const beforeDigitsLeft = raw.slice(0, caret).replace(/\D/g, '').length;
+      // 反白選取：交給瀏覽器預設行為
+      if (posL !== posR) return;
 
-    const after = fmt(digits);
-    // caret 放在「同一顆數字」之後
-    const newCaret = caretPosForKthDigit(after, beforeDigitsLeft - 1);
-    e.target.value = after;
-    e.target.setSelectionRange(newCaret, newCaret);
+      const digitsAll = val.replace(/\D/g, '');
+      const digitsBefore = val.slice(0, posL).replace(/\D/g, '').length;
 
-    if (triedSubmit) validateAndMark();
-  });
-})();
+      if (e.key === 'Backspace') {
+        if (digitsBefore === 0) return;            // 沒得刪
+        e.preventDefault();
+        const newDigits = digitsAll.slice(0, digitsBefore - 1) + digitsAll.slice(digitsBefore);
+        const after = fmt(newDigits);
+        const newCaret = caretPosForKthDigit(after, digitsBefore - 1);
+        phoneI.value = after;
+        phoneI.setSelectionRange(newCaret, newCaret);
+      } else if (e.key === 'Delete') {
+        if (digitsBefore >= digitsAll.length) return; // 右側沒數字
+        e.preventDefault();
+        const newDigits = digitsAll.slice(0, digitsBefore) + digitsAll.slice(digitsBefore + 1);
+        const after = fmt(newDigits);
+        // Delete 後游標保持在「刪掉那顆的原位置」之前
+        const newCaret = caretPosForKthDigit(after, digitsBefore - 1) + 1;
+        phoneI.value = after;
+        phoneI.setSelectionRange(newCaret, newCaret);
+      }
 
+      if (triedSubmit) validateAndMark();
+    });
+
+    // input：一般輸入（數字/貼上）即時格式化並盡量保留游標
+    phoneI.addEventListener('input', (e) => {
+      const raw = e.target.value;
+      const caret = e.target.selectionStart;
+      const digits = raw.replace(/\D/g, '').slice(0, 10);
+      const beforeDigitsLeft = raw.slice(0, caret).replace(/\D/g, '').length;
+
+      const after = fmt(digits);
+      // caret 放在「同一顆數字」之後
+      const newCaret = caretPosForKthDigit(after, beforeDigitsLeft - 1);
+      e.target.value = after;
+      e.target.setSelectionRange(newCaret, newCaret);
+
+      if (triedSubmit) validateAndMark();
+    });
+  })();
 
   function mark(el, ok) {
     if (!el) return;
@@ -335,6 +347,62 @@ document.addEventListener('DOMContentLoaded', async () => {
       // mark(slot, slotOK);
     }
     return nameOK && phoneOK && emailOK && dateOK && slotOK && locOK;
+  }
+
+  // === Email 建議網域 ===
+  const emailDomains = [
+    'gmail.com',
+    'yahoo.com',
+    'yahoo.com.tw',
+    'hotmail.com',
+    'hotmail.com.tw',
+    'outlook.com'
+  ];
+
+  if (emailI && emailSug) {
+    emailI.addEventListener('input', function () {
+      const value = this.value;
+      const atIndex = value.indexOf('@');
+
+      // 還沒輸入 @ 就不顯示
+      if (atIndex === -1) {
+        emailSug.style.display = 'none';
+        return;
+      }
+
+      const namePart = value.slice(0, atIndex);
+      const typedDomain = value.slice(atIndex + 1).toLowerCase();
+
+      const matches = emailDomains.filter(d => d.startsWith(typedDomain));
+
+      if (!matches.length) {
+        emailSug.style.display = 'none';
+        return;
+      }
+
+      emailSug.innerHTML = '';
+      matches.forEach(domain => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item list-group-item-action';
+        li.textContent = `${namePart}@${domain}`;
+
+        // 用 mousedown，避免 blur 先把選單關掉
+        li.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          emailI.value = this.textContent;
+          emailSug.style.display = 'none';
+          if (triedSubmit) validateAndMark();
+        });
+
+        emailSug.appendChild(li);
+      });
+
+      emailSug.style.display = 'block';
+    });
+
+    emailI.addEventListener('blur', function () {
+      setTimeout(() => { emailSug.style.display = 'none'; }, 150);
+    });
   }
 
   form.addEventListener('submit', (e) => {
