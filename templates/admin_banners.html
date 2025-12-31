@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Banner 管理{% endblock %}
+{% block content %}
+<div class="container" style="margin-top:90px;max-width:1100px">
+
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h3 class="m-0">🎯 Banner 管理</h3>
+    <a href="{{ url_for('index') }}" target="_blank" class="btn btn-outline-secondary">預覽首頁</a>
+  </div>
+
+  <!-- 新增 -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h5 class="card-title mb-3">新增 Banner</h5>
+      <form method="post" enctype="multipart/form-data" class="row g-3">
+        <input type="hidden" name="action" value="create">
+        <div class="col-md-4">
+          <label class="form-label">圖片（建議 1920×650）</label>
+          <input type="file" name="image" class="form-control" accept=".jpg,.jpeg,.png,.webp" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">標題（可空）</label>
+          <input type="text" name="title" class="form-control">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">副標（可空）</label>
+          <input type="text" name="subtitle" class="form-control">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">連結（/shop 或 http…）</label>
+          <input type="text" name="link" class="form-control" placeholder="/shop">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">徽章（可空，如 NEW）</label>
+          <input type="text" name="badge" class="form-control" placeholder="NEW">
+        </div>
+        <div class="col-md-3 d-grid">
+          <label class="form-label invisible">提交</label>
+          <button class="btn btn-primary">+ 新增</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 列表 -->
+  <div class="row g-3">
+    {% for b in banners %}
+    <div class="col-md-6">
+      <div class="card h-100 shadow-sm">
+        <div class="ratio" style="--bs-aspect-ratio:34%;">
+          <img src="{{ url_for('static', filename='hero/' ~ b.img) }}" class="w-100 h-100" style="object-fit:cover">
+        </div>
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+              {% if b.badge %}<span class="badge bg-secondary">{{ b.badge }}</span>{% endif %}
+              <strong class="fs-5">{{ b.title or '（無標題）' }}</strong>
+            </div>
+            <small class="text-muted">順序：{{ loop.index }}</small>
+          </div>
+          <div class="text-muted mt-1">{{ b.subtitle }}</div>
+          {% if b.link %}<div class="small mt-1"><code>{{ b.link }}</code></div>{% endif %}
+
+          <hr>
+
+          <!-- 排序 & 刪除 -->
+          <div class="d-flex gap-2 mb-3">
+            <form method="post">
+              <input type="hidden" name="action" value="move_up">
+              <input type="hidden" name="id" value="{{ b.id }}">
+              <button class="btn btn-outline-secondary btn-sm" {% if loop.first %}disabled{% endif %}>⬆️ 上移</button>
+            </form>
+            <form method="post">
+              <input type="hidden" name="action" value="move_down">
+              <input type="hidden" name="id" value="{{ b.id }}">
+              <button class="btn btn-outline-secondary btn-sm" {% if loop.last %}disabled{% endif %}>⬇️ 下移</button>
+            </form>
+            <form method="post" onsubmit="return confirm('確定要刪除？此動作會同時刪除圖片檔。')">
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="id" value="{{ b.id }}">
+              <button class="btn btn-outline-danger btn-sm">🗑️ 刪除</button>
+            </form>
+          </div>
+
+          <!-- 編輯文字 -->
+          <form method="post" class="row g-2">
+            <input type="hidden" name="action" value="edit_text">
+            <input type="hidden" name="id" value="{{ b.id }}">
+            <div class="col-md-6">
+              <label class="form-label small">標題</label>
+              <input type="text" name="title" class="form-control form-control-sm" value="{{ b.title }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">徽章</label>
+              <input type="text" name="badge" class="form-control form-control-sm" value="{{ b.badge }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label small">副標</label>
+              <input type="text" name="subtitle" class="form-control form-control-sm" value="{{ b.subtitle }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label small">連結</label>
+              <input type="text" name="link" class="form-control form-control-sm" value="{{ b.link }}">
+            </div>
+            <div class="col-12 d-flex justify-content-end">
+              <button class="btn btn-primary btn-sm mt-2">儲存文字</button>
+            </div>
+          </form>
+
+          <!-- 換圖 -->
+          <form method="post" enctype="multipart/form-data" class="mt-3">
+            <input type="hidden" name="action" value="replace_image">
+            <input type="hidden" name="id" value="{{ b.id }}">
+            <div class="input-group input-group-sm">
+              <input type="file" name="image" class="form-control" accept=".jpg,.jpeg,.png,.webp" required>
+              <button class="btn btn-outline-primary">換圖</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if banners|length == 0 %}
+  <div class="text-center text-muted my-5">目前沒有 Banner，請先新增。</div>
+  {% endif %}
+
+</div>
+{% endblock %}

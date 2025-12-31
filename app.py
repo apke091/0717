@@ -104,6 +104,26 @@ def resize_fit_width(img: Image.Image, width: int) -> Image.Image:
 def ensure_review_tables():
     return
 
+def ensure_banners_table():
+    conn = get_db_connection()
+    with conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS banners (
+                    id SERIAL PRIMARY KEY,
+                    img TEXT NOT NULL,
+                    title TEXT,
+                    subtitle TEXT,
+                    link TEXT,
+                    badge TEXT,
+                    sort_order INTEGER NOT NULL DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_banners_sort ON banners(sort_order, id);")
+    conn.close()
+
+
 # ===== flash 自動判斷類別（避免忘了帶 category）======
 if not hasattr(_flask, "_original_flash"):
     _flask._original_flash = _flask.flash  # 保存原始 flash 函式
@@ -331,7 +351,17 @@ def admin_required(f):
 @app.route("/")
 @nocache
 def index():
-    return render_template("index.html")
+    ensure_banners_table()
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("""
+        SELECT id, img, title, subtitle, link, badge
+        FROM banners
+        ORDER BY sort_order ASC, id ASC
+    """)
+    banners = cur.fetchall()
+    conn.close()
+    return render_template("index.html", banners=banners)
 
 @app.route("/about")
 def about():
@@ -506,6 +536,7 @@ def upload_file():
 
     return render_template("upload_file.html")
 
+
 @app.route("/news")
 def news():
     return render_template("news.html")
@@ -565,6 +596,148 @@ def rent():
         flash("✅ 已送出申請，請等待審核"); return redirect(url_for("rent"))
 
     return render_template("rent.html", now=datetime.now(TZ).isoformat())
+
+@app.route("/admin/banners", methods=["GET", "POST"])
+@admin_required
+def admin_banners():
+    ensure_banners_table()
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    if request.method == "POST":
+        action = request.form.get("action", "")
+        bid = request.form.get("id")
+
+        # 新增
+        if action == "create":
+            file = request.files.get("image")
+            title = (request.form.get("title") or "").strip()
+            subtitle = (request.form.get("subtitle") or "").strip()
+            link = (request.form.get("link") or "").strip()
+            badge = (request.form.get("badge") or "").strip()
+
+            if not file or not file.filename:
+                conn.close(); flash("請選擇圖片", "warning"); return redirect(url_for("admin_banners"))
+            if not allowed_banner_file(file.filename):
+                conn.close(); flash("檔案僅支援 jpg/jpeg/png/webp", "danger"); return redirect(url_for("admin_banners"))
+
+            fname = gen_banner_filename(file.filename)
+            file.save(os.path.join(HERO_DIR, fname))
+
+            with conn:
+                with conn.cursor() as c2:
+                    # sort_order = 當前最大 + 1
+                    c2.execute("SELECT COALESCE(MAX(sort_order), -1) + 1 AS s FROM banners;")
+                    s = (c2.fetchone() or {}).get("s", 0)
+                    c2.execute("""
+                        INSERT INTO banners(img, title, subtitle, link, badge, sort_order)
+                        VALUES (%s,%s,%s,%s,%s,%s)
+                    """, (fname, title, subtitle, link, badge, s))
+            conn.close()
+            flash("✅ 已新增 Banner", "success")
+            return redirect(url_for("admin_banners"))
+
+        # 刪除
+        if action == "delete" and bid:
+            cur.execute("SELECT img FROM banners WHERE id=%s", (bid,))
+            row = cur.fetchone()
+            with conn:
+                with conn.cursor() as c2:
+                    c2.execute("DELETE FROM banners WHERE id=%s", (bid,))
+            conn.close()
+            # 刪檔
+            try:
+                if row and row.get("img"):
+                    os.remove(os.path.join(HERO_DIR, row["img"]))
+            except Exception:
+                pass
+            flash("🗑️ 已刪除 Banner", "success")
+            return redirect(url_for("admin_banners"))
+
+        # 排序（上 / 下）
+        if action in {"move_up", "move_down"} and bid:
+            with conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as c2:
+                    c2.execute("SELECT id, sort_order FROM banners WHERE id=%s", (bid,))
+                    me = c2.fetchone()
+                    if not me:
+                        conn.close(); flash("找不到該 Banner", "danger"); return redirect(url_for("admin_banners"))
+                    if action == "move_up":
+                        c2.execute("""
+                            SELECT id, sort_order FROM banners
+                            WHERE sort_order < %s
+                            ORDER BY sort_order DESC, id DESC
+                            LIMIT 1
+                        """, (me["sort_order"],))
+                    else:
+                        c2.execute("""
+                            SELECT id, sort_order FROM banners
+                            WHERE sort_order > %s
+                            ORDER BY sort_order ASC, id ASC
+                            LIMIT 1
+                        """, (me["sort_order"],))
+                    other = c2.fetchone()
+                    if other:
+                        # 互換 sort_order
+                        c2.execute("UPDATE banners SET sort_order=%s WHERE id=%s", (other["sort_order"], me["id"]))
+                        c2.execute("UPDATE banners SET sort_order=%s WHERE id=%s", (me["sort_order"], other["id"]))
+            conn.close()
+            flash("🔀 已更新排序", "success")
+            return redirect(url_for("admin_banners"))
+
+        # 編輯文字（不換圖）
+        if action == "edit_text" and bid:
+            title = (request.form.get("title") or "").strip()
+            subtitle = (request.form.get("subtitle") or "").strip()
+            link = (request.form.get("link") or "").strip()
+            badge = (request.form.get("badge") or "").strip()
+            with conn:
+                with conn.cursor() as c2:
+                    c2.execute("""
+                        UPDATE banners
+                        SET title=%s, subtitle=%s, link=%s, badge=%s
+                        WHERE id=%s
+                    """, (title, subtitle, link, badge, bid))
+            conn.close()
+            flash("✏️ 已更新文字", "success")
+            return redirect(url_for("admin_banners"))
+
+        # 換圖
+        if action == "replace_image" and bid:
+            file = request.files.get("image")
+            if not file or not file.filename:
+                conn.close(); flash("請選擇要上傳的圖片", "warning"); return redirect(url_for("admin_banners"))
+            if not allowed_banner_file(file.filename):
+                conn.close(); flash("檔案僅支援 jpg/jpeg/png/webp", "danger"); return redirect(url_for("admin_banners"))
+
+            cur.execute("SELECT img FROM banners WHERE id=%s", (bid,))
+            old = cur.fetchone()
+            fname = gen_banner_filename(file.filename)
+            file.save(os.path.join(HERO_DIR, fname))
+
+            with conn:
+                with conn.cursor() as c2:
+                    c2.execute("UPDATE banners SET img=%s WHERE id=%s", (fname, bid))
+            conn.close()
+
+            try:
+                if old and old.get("img"):
+                    os.remove(os.path.join(HERO_DIR, old["img"]))
+            except Exception:
+                pass
+
+            flash("🖼️ 已更新圖片", "success")
+            return redirect(url_for("admin_banners"))
+
+    # GET：列表
+    cur.execute("""
+        SELECT id, img, title, subtitle, link, badge, sort_order
+        FROM banners
+        ORDER BY sort_order ASC, id ASC
+    """)
+    items = cur.fetchall()
+    conn.close()
+    return render_template("admin_banners.html", banners=items)
 
 @app.route("/api/rent/disabled_dates", methods=["GET"])
 def api_rent_disabled_dates():
@@ -1068,6 +1241,19 @@ def ensure_review_tables():
                         FROM review_photos;
                     """)
     conn.close()
+
+# === Banner（首頁輪播）設定 ===
+HERO_DIR = os.path.join(BASE_DIR, "static", "hero")
+ALLOWED_BANNER_EXTS = {"jpg", "jpeg", "png", "webp"}
+os.makedirs(HERO_DIR, exist_ok=True)
+
+def allowed_banner_file(filename: str) -> bool:
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_BANNER_EXTS
+
+def gen_banner_filename(original_name: str) -> str:
+    stem = secure_filename(os.path.splitext(original_name)[0])[:40] or "banner"
+    ext = os.path.splitext(original_name)[1].lower() or ".jpg"
+    return f"{int(datetime.now(TZ).timestamp())}_{uuid.uuid4().hex[:6]}_{stem}{ext}"
 
 # 取用 /uploads 下的檔案（圖片/影片 inline，其餘下載）
 @app.route("/u/<path:relpath>")
