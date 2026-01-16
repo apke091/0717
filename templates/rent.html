@@ -2,6 +2,13 @@
 {% block title %}線上申請租借{% endblock %}
 
 {% block content %}
+
+<!-- Flatpickr（時間選擇器） -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/airbnb.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh-tw.js"></script>
+
 <style>
   .rent-card { border:0; border-radius:18px; box-shadow:0 12px 30px rgba(83,70,186,.08); }
   .rent-header{
@@ -14,39 +21,39 @@
   .form-select,.form-control{ border-radius:12px; }
   .form-select:focus,.form-control:focus{ box-shadow:0 0 0 .2rem rgba(131,93,255,.18); border-color:#835dff; }
   .hint{ color:#6b6b82; font-size:.9rem; }
-  .btn-primary{ background:#835dff; border-color:#835dff; border-radius:12px; padding:.6rem 1.1rem; }
-  .btn-primary:hover{ background:#6f49ff; border-color:#6f49ff; }
-
-  /* Email 建議清單，避免太高 */
-  #email-suggestions {
-    max-height: 180px;
-    overflow-y: auto;
+  .rent-card .btn-primary{
+    background:#9a8cf2; border-color:#9a8cf2; border-radius:12px; padding:.6rem 1.1rem; color:#fff;
   }
+  .rent-card .btn-primary:hover{ background:#8e80ec; border-color:#8e80ec; }
+  .rent-card .btn-primary:active{ background:#8376e6; border-color:#8376e6; }
+  .rent-card .btn-primary:focus-visible{ outline:none; box-shadow:0 0 0 .2rem rgba(154,140,242,.28); }
+  #email-suggestions { max-height: 180px; overflow-y: auto; }
+  .flatpickr-input.form-control { background:#fff; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,.06) inset; }
+  .flatpickr-calendar { border-radius:14px; box-shadow:0 16px 40px rgba(90,80,200,.18); }
 </style>
 
 <div class="container-fluid" style="margin-top:90px;">
   <div class="row justify-content-center">
     <div class="col-12 col-xl-10">
-
       <div class="card rent-card">
         <div class="rent-header">
           <h2 class="rent-title mb-1">線上申請租借</h2>
-          <div class="hint">選擇場地與日期後，系統會載入可用的租借時段。</div>
+          <div class="hint">選擇教室、日期與時間。</div>
         </div>
 
         <div class="card-body p-4 p-md-5">
           <form id="rentForm" novalidate method="POST" action="{{ url_for('rent') }}">
-            <!-- 場地 -->
+            <!-- 教室 -->
             <div class="mb-3">
-             <label class="form-label" for="location">教室</label>
-                <select class="form-select" id="location" name="location" required>
-                    <option value="" selected disabled>請選擇教室</option>
-                    <option>府前教室</option>
-                    <option>西門教室</option>
-                </select>
+              <label class="form-label" for="location">教室</label>
+              <select class="form-select" id="location" name="location" required>
+                <option value="" selected disabled>請選擇教室</option>
+                <option>府前教室</option>
+                <option>西門教室</option>
+              </select>
             </div>
 
-            <!-- 租借日期 -->
+            <!-- 日期（年/月/日選單） -->
             <div class="mb-2">
               <label class="form-label">租借日期</label>
               <div class="d-flex gap-2">
@@ -54,21 +61,24 @@
                 <select id="mm"   class="form-select" style="max-width:110px;"></select>
                 <select id="dd"   class="form-select" style="max-width:110px;"></select>
               </div>
-              <div class="hint mt-1">未出現日期代表已有人申請租借。</div>
+              <div class="hint mt-1">僅可選擇今天（含）以後的日期。</div>
               <input type="hidden" id="date" name="date" required>
             </div>
 
-            <!-- 租借時段 -->
-            <div class="mb-4">
-              <label class="form-label">租借時段</label>
-              <div class="position-relative">
-                <select id="time_slot" name="time_slot" class="form-select" required disabled>
-                  <option value="">請先選擇日期</option>
-                </select>
-                <div id="slotSpinner" class="position-absolute top-50 end-0 translate-middle-y me-3 d-none">
-                  <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+            <!-- 時間（Flatpickr，允許手打） -->
+            <div class="mb-3">
+              <label class="form-label">租借時間</label>
+              <div class="row g-2">
+                <div class="col-6">
+                  <input type="text" name="start_time" class="form-control js-time"
+                         placeholder="開始（如 09:00）" required>
+                </div>
+                <div class="col-6">
+                  <input type="text" name="end_time" class="form-control js-time"
+                         placeholder="結束（如 12:00）" required>
                 </div>
               </div>
+              <div class="hint">開放 09:00–21:30；結束需晚於開始。</div>
             </div>
 
             <!-- 申請人 -->
@@ -81,25 +91,20 @@
             <!-- 電話 -->
             <div class="mb-3">
               <label class="form-label">電話</label>
-             <input id="phone" name="phone" class="form-control"
-                    placeholder="09xx-xxx-xxx" required
-                    inputmode="tel"
-                    pattern="^09\d{2}-?\d{3}-?\d{3}$"
-                    maxlength="12">
+              <input id="phone" name="phone" class="form-control"
+                     placeholder="09xx-xxx-xxx" required inputmode="tel"
+                     pattern="^09\\d{2}-?\\d{3}-?\\d{3}$" maxlength="12">
               <div class="form-text">僅接受台灣手機：09xx-xxx-xxx（可不輸入連字號）。</div>
               <div class="invalid-feedback">請輸入正確的手機號碼（09xx-xxx-xxx）</div>
             </div>
 
-            <!-- Email（必填） + 建議清單 -->
+            <!-- Email -->
             <div class="mb-3 position-relative">
               <label class="form-label">Email</label>
               <input id="email" name="email" type="email" class="form-control"
-                     placeholder="name@example.com" required
-                     inputmode="email"
+                     placeholder="name@example.com" required inputmode="email"
                      pattern="^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$">
               <div class="invalid-feedback">請輸入正確的 Email</div>
-
-              <!-- 建議選單（預設隱藏） -->
               <ul id="email-suggestions"
                   class="list-group position-absolute w-100 shadow-sm"
                   style="z-index:1060; top:100%; left:0; display:none;">
@@ -124,15 +129,12 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   // ---- DOM ----
   const yyyy = document.getElementById('yyyy');
   const mm   = document.getElementById('mm');
   const dd   = document.getElementById('dd');
-  const loc  = document.getElementById('location');
   const hiddenDate = document.getElementById('date');
-  const slot = document.getElementById('time_slot');
-  const slotSpinner = document.getElementById('slotSpinner');
 
   const form   = document.getElementById('rentForm');
   const nameI  = document.getElementById('name');
@@ -140,34 +142,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   const emailI = document.getElementById('email');
   const emailSug = document.getElementById('email-suggestions');
 
-  // ---- API ----
-  const API_TS       = "{{ url_for('api_rent_timeslots') }}";
-  const API_DISABLED = "{{ url_for('api_rent_disabled_dates') }}";
-
   // ---- Utils ----
   const today = new Date();
   const TY = today.getFullYear(), TM = today.getMonth() + 1, TD = today.getDate();
   const pad2 = n => String(n).padStart(2,'0');
   const daysInMonth = (y, m) => new Date(y, m, 0).getDate();
 
-  // 整天已滿日期（後端計算）
-  let disabledSet = new Set();
-
   // 年：今年 ~ +2
   for (let y = TY; y <= TY + 2; y++) yyyy.add(new Option(y, y));
 
-  // 今年只顯示「本月以後」，未來年份顯示 1–12 ⇒ 每次重建都把月份設為第一個
   function rebuildMonths() {
     const y = Number(yyyy.value);
     mm.innerHTML = '';
     const startM = (y === TY) ? TM : 1;
-    for (let m = startM; m <= 12; m++) {
-      mm.add(new Option(pad2(m), pad2(m)));
-    }
-    if (mm.options.length) mm.value = mm.options[0].value; // 重設成第一個
+    for (let m = startM; m <= 12; m++) mm.add(new Option(pad2(m), pad2(m)));
+    if (mm.options.length) mm.value = mm.options[0].value;
   }
 
-  // 依年/月重建日期；每次重建都把日期設為第一個可選
   function rebuildDays() {
     const y = Number(yyyy.value);
     const m = Number(mm.value);
@@ -179,278 +170,209 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let first = '';
     for (let d = startD; d <= dim; d++) {
-      const iso = `${y}-${pad2(m)}-${pad2(d)}`;
-      if (disabledSet.has(iso)) continue; // 整天已滿 → 不顯示
       const opt = new Option(pad2(d), pad2(d));
       dd.add(opt);
       if (!first) first = opt.value;
     }
-
-    dd.value = first || ''; // 重設為第一個可選日期
+    dd.value = first || '';
     hiddenDate.value = dd.value ? `${y}-${pad2(m)}-${dd.value}` : '';
   }
 
-  async function fetchDisabledDates() {
-    disabledSet = new Set();
-    const l = (loc.value || '').trim();
-    if (!l) return;
-    try {
-      const r = await fetch(`${API_DISABLED}?location=${encodeURIComponent(l)}`);
-      const data = await r.json();
-      (data.disabled_dates || []).forEach(iso => disabledSet.add(iso));
-    } catch { /* ignore */ }
-  }
-
-  function setSlot(msg, enabled) {
-    slot.innerHTML = '';
-    slot.add(new Option(msg, ''));
-    slot.disabled = !enabled;
-  }
-  function showSpinner(on){ slotSpinner.classList.toggle('d-none', !on); }
-
-  async function loadTimeSlots() {
-    const y = Number(yyyy.value);
-    const m = Number(mm.value);
-    const d = Number(dd.value);
-    const l = (loc.value || '').trim();
-
-    if (!(y && m && d && l)) { setSlot('請先選擇日期', false); return; }
-
-    const iso = `${y}-${pad2(m)}-${pad2(d)}`;
-    hiddenDate.value = iso;
-
-    setSlot('載入中…', false); showSpinner(true);
-    try {
-      const r = await fetch(`${API_TS}?location=${encodeURIComponent(l)}&date=${encodeURIComponent(iso)}`);
-      const data = await r.json();
-      const arr = Array.isArray(data.available) ? data.available : [];
-
-      slot.innerHTML = '';
-      if (!arr.length) {
-        slot.add(new Option('此日無可用時段', ''));
-        slot.disabled = true;
-      } else {
-        slot.add(new Option('請選擇時段', ''));
-        arr.forEach(s => slot.add(new Option(s.label || s, s.id || s)));
-        slot.disabled = false;
-      }
-    } catch {
-      setSlot('載入時段失敗', false);
-    } finally {
-      showSpinner(false);
-    }
-  }
-
-  // ====== 前端驗證：只在按送出後才顯示紅色 ======
+  // ====== 前端驗證（電話/Email） ======
   const PHONE_RE = /^09\d{2}-?\d{3}-?\d{3}$/;
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   let triedSubmit = false;
+  const mark = (el, ok) => el && el.classList.toggle('is-invalid', !ok);
 
-  // === 電話輸入：格式化 + 智慧刪除（Backspace/Delete 直接刪數字，不會卡在 '-'） ===
+  function validateAndMark() {
+    const ok = {
+      name: !!nameI?.value.trim(),
+      phone: PHONE_RE.test((phoneI?.value || '').trim()),
+      email: EMAIL_RE.test((emailI?.value || '').trim()),
+      date: !!hiddenDate.value && !!dd.value
+    };
+    if (triedSubmit) {
+      mark(nameI, ok.name); mark(phoneI, ok.phone); mark(emailI, ok.email);
+    }
+    return ok.name && ok.phone && ok.email && ok.date;
+  }
+
+  // 電話輸入即時格式化
   (function () {
     if (!phoneI) return;
-
-    function fmt(digits) {
-      digits = digits.replace(/\D/g, '').slice(0, 10); // 09xxxxxxxx 共 10 碼
-      if (digits.length <= 4) return digits;
-      if (digits.length <= 7) return digits.slice(0,4) + '-' + digits.slice(4);
-      return digits.slice(0,4) + '-' + digits.slice(4,7) + '-' + digits.slice(7);
+    function fmt(d) {
+      d = d.replace(/\D/g, '').slice(0, 10);
+      if (d.length <= 4) return d;
+      if (d.length <= 7) return d.slice(0,4)+'-'+d.slice(4);
+      return d.slice(0,4)+'-'+d.slice(4,7)+'-'+d.slice(7);
     }
-
-    // 將「第 k 顆數字之後」換算回格式字串中的游標位置
-    function caretPosForKthDigit(afterStr, k) {
-      if (k < 0) return 0;
-      let count = 0;
-      for (let i = 0; i < afterStr.length; i++) {
-        if (/\d/.test(afterStr[i])) {
-          if (count === k) return i + 1; // 在第 k 顆數字「後面」
-          count++;
-        }
-      }
-      return afterStr.length;
-    }
-
-    // keydown：讓 Backspace/Delete 直接刪掉數字
-    phoneI.addEventListener('keydown', (e) => {
-      if (e.key !== 'Backspace' && e.key !== 'Delete') return;
-      const val = phoneI.value;
-      const posL = phoneI.selectionStart;
-      const posR = phoneI.selectionEnd;
-
-      // 反白選取：交給瀏覽器預設行為
-      if (posL !== posR) return;
-
-      const digitsAll = val.replace(/\D/g, '');
-      const digitsBefore = val.slice(0, posL).replace(/\D/g, '').length;
-
-      if (e.key === 'Backspace') {
-        if (digitsBefore === 0) return;            // 沒得刪
-        e.preventDefault();
-        const newDigits = digitsAll.slice(0, digitsBefore - 1) + digitsAll.slice(digitsBefore);
-        const after = fmt(newDigits);
-        const newCaret = caretPosForKthDigit(after, digitsBefore - 1);
-        phoneI.value = after;
-        phoneI.setSelectionRange(newCaret, newCaret);
-      } else if (e.key === 'Delete') {
-        if (digitsBefore >= digitsAll.length) return; // 右側沒數字
-        e.preventDefault();
-        const newDigits = digitsAll.slice(0, digitsBefore) + digitsAll.slice(digitsBefore + 1);
-        const after = fmt(newDigits);
-        // Delete 後游標保持在「刪掉那顆的原位置」之前
-        const newCaret = caretPosForKthDigit(after, digitsBefore - 1) + 1;
-        phoneI.value = after;
-        phoneI.setSelectionRange(newCaret, newCaret);
-      }
-
-      if (triedSubmit) validateAndMark();
-    });
-
-    // input：一般輸入（數字/貼上）即時格式化並盡量保留游標
     phoneI.addEventListener('input', (e) => {
       const raw = e.target.value;
       const caret = e.target.selectionStart;
       const digits = raw.replace(/\D/g, '').slice(0, 10);
       const beforeDigitsLeft = raw.slice(0, caret).replace(/\D/g, '').length;
-
       const after = fmt(digits);
-      // caret 放在「同一顆數字」之後
-      const newCaret = caretPosForKthDigit(after, beforeDigitsLeft - 1);
+      let count = 0, pos = after.length;
+      for (let i=0; i<after.length; i++) {
+        if (/\d/.test(after[i])) {
+          if (count === beforeDigitsLeft) { pos = i; break; }
+          count++;
+        }
+      }
       e.target.value = after;
-      e.target.setSelectionRange(newCaret, newCaret);
-
+      e.target.setSelectionRange(pos, pos);
       if (triedSubmit) validateAndMark();
     });
   })();
 
-  function mark(el, ok) {
-    if (!el) return;
-    el.classList.toggle('is-invalid', !ok);
-  }
-
-  function validateAndMark() {
-    const nameOK   = !!nameI?.value.trim();
-    const phoneOK  = PHONE_RE.test((phoneI?.value || '').trim());
-    const emailVal = (emailI?.value || '').trim();
-    const emailOK  = emailVal.length > 0 && EMAIL_RE.test(emailVal);
-
-    const dateOK = !!hiddenDate.value && !!dd.value;
-    const slotOK = !slot.disabled && !!slot.value;
-    const locOK  = !!(loc.value || '').trim();
-
-    if (triedSubmit) {
-      mark(nameI,  nameOK);
-      mark(phoneI, phoneOK);
-      mark(emailI, emailOK);
-      // 如需也把 select 標紅，可打開下面：
-      // mark(loc,  locOK);
-      // mark(dd,   dateOK);
-      // mark(slot, slotOK);
-    }
-    return nameOK && phoneOK && emailOK && dateOK && slotOK && locOK;
-  }
-
-  // === Email 建議網域 ===
-  const emailDomains = [
-    'gmail.com',
-    'yahoo.com',
-    'yahoo.com.tw',
-    'hotmail.com',
-    'hotmail.com.tw',
-    'outlook.com'
-  ];
-
+  // Email 建議網域
+  const emailDomains = ['gmail.com','yahoo.com','yahoo.com.tw','hotmail.com','hotmail.com.tw','outlook.com'];
   if (emailI && emailSug) {
     emailI.addEventListener('input', function () {
       const value = this.value;
       const atIndex = value.indexOf('@');
-
-      // 還沒輸入 @ 就不顯示
-      if (atIndex === -1) {
-        emailSug.style.display = 'none';
-        return;
-      }
-
+      if (atIndex === -1) { emailSug.style.display = 'none'; return; }
       const namePart = value.slice(0, atIndex);
       const typedDomain = value.slice(atIndex + 1).toLowerCase();
-
       const matches = emailDomains.filter(d => d.startsWith(typedDomain));
-
-      if (!matches.length) {
-        emailSug.style.display = 'none';
-        return;
-      }
-
+      if (!matches.length) { emailSug.style.display = 'none'; return; }
       emailSug.innerHTML = '';
       matches.forEach(domain => {
         const li = document.createElement('li');
         li.className = 'list-group-item list-group-item-action';
         li.textContent = `${namePart}@${domain}`;
-
-        // 用 mousedown，避免 blur 先把選單關掉
         li.addEventListener('mousedown', function (e) {
           e.preventDefault();
           emailI.value = this.textContent;
           emailSug.style.display = 'none';
           if (triedSubmit) validateAndMark();
         });
-
         emailSug.appendChild(li);
       });
-
       emailSug.style.display = 'block';
     });
-
-    emailI.addEventListener('blur', function () {
-      setTimeout(() => { emailSug.style.display = 'none'; }, 150);
-    });
+    emailI.addEventListener('blur', () => setTimeout(() => emailSug.style.display = 'none', 150));
   }
 
   form.addEventListener('submit', (e) => {
     triedSubmit = true;
-    if (!validateAndMark()) {
-      e.preventDefault();
-      e.stopPropagation();
+    if (!validateAndMark()) { e.preventDefault(); e.stopPropagation(); }
+  });
+
+  ['input','change'].forEach(evt => {
+    [nameI, phoneI, emailI, yyyy, mm, dd].forEach(el => el?.addEventListener(evt, () => { if (triedSubmit) validateAndMark(); }));
+  });
+
+  // ---- 初始化：日期三選單 ----
+  yyyy.value = TY; rebuildMonths(); rebuildDays();
+  yyyy.addEventListener('change', () => { rebuildMonths(); rebuildDays(); });
+  mm.addEventListener('change', rebuildDays);
+  dd.addEventListener('change', () => {
+    const y = Number(yyyy.value), m = Number(mm.value);
+    hiddenDate.value = dd.value ? `${y}-${pad2(m)}-${dd.value}` : '';
+  });
+
+  // ================================
+  // Flatpickr（09:00–21:30 / 15 分, 手動輸入 OK）
+  // ================================
+  const s = document.querySelector('input[name="start_time"]');
+  const e = document.querySelector('input[name="end_time"]');
+
+  // 解鎖手動輸入（避免某些環境被加 readonly）
+  function unlockTyping(el){
+    if (!el) return;
+    el.readOnly = false; el.removeAttribute('readonly');
+    el.setAttribute('autocomplete','off'); el.style.caretColor = 'auto';
+  }
+  function keepUnlocked(el){
+    const mo = new MutationObserver(() => unlockTyping(el));
+    mo.observe(el, { attributes:true, attributeFilter:['readonly'] });
+  }
+
+  const baseOpts = {
+    enableTime:true, noCalendar:true, time_24hr:true,
+    minuteIncrement:15, minTime:"09:00", maxTime:"21:30",
+    allowInput:true, disableMobile:true, clickOpens:true,
+    locale: window.flatpickr?.l10ns?.zh_tw || undefined
+  };
+
+  const startPicker = flatpickr(s, {
+    ...baseOpts, defaultHour:9, defaultMinute:0,
+    onReady(){ unlockTyping(s); keepUnlocked(s); },
+    onOpen(){ unlockTyping(s); }, onClose(){ unlockTyping(s); },
+    onChange(_, t){
+      if (!t) return;
+      const [hh, mm] = t.split(':').map(Number);
+      const d = new Date(0,0,0,hh,mm+15);
+      const minStr = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+      endPicker.set('minTime', minStr);
+      if (e.value && e.value < minStr) endPicker.setDate(minStr, true);
+      e.setCustomValidity('');
     }
   });
 
-  // 按了送出後，使用者每次輸入/變更都即時更新紅框
-  ['input','change'].forEach(evt => {
-    nameI?.addEventListener(evt, () => { if (triedSubmit) validateAndMark(); });
-    phoneI?.addEventListener(evt, () => { if (triedSubmit) validateAndMark(); });
-    emailI?.addEventListener(evt, () => { if (triedSubmit) validateAndMark(); });
-    loc?.addEventListener(evt,   () => { if (triedSubmit) validateAndMark(); });
-    yyyy?.addEventListener(evt,  () => { if (triedSubmit) validateAndMark(); });
-    mm?.addEventListener(evt,    () => { if (triedSubmit) validateAndMark(); });
-    dd?.addEventListener(evt,    () => { if (triedSubmit) validateAndMark(); });
-    slot?.addEventListener(evt,  () => { if (triedSubmit) validateAndMark(); });
+  const endPicker = flatpickr(e, {
+    ...baseOpts, defaultHour:10, defaultMinute:0,
+    onReady(){ unlockTyping(e); keepUnlocked(e); },
+    onOpen(){ unlockTyping(e); }, onClose(){ unlockTyping(e); },
+    onValueUpdate(_, t){
+      const sv = s.value; if (!sv || !t) return;
+      e.setCustomValidity(t <= sv ? '結束時間必須晚於開始時間' : '');
+    }
   });
 
-  // ---- 初始化 ----
-  yyyy.value = TY;
-  rebuildMonths();
-  await fetchDisabledDates();
-  rebuildDays();
-  await loadTimeSlots();
-
-  // ---- 事件：年月日/場地改變 ----
-  yyyy.addEventListener('change', async () => {
-    rebuildMonths();             // 自動設為第一個可選月份
-    await fetchDisabledDates();
-    rebuildDays();               // 自動設為第一個可選日期
-    await loadTimeSlots();
+  // 防止 Flatpickr 攔截鍵盤：確保能輸入
+  [s,e].forEach(el=>{
+    el.addEventListener('keydown', ev => ev.stopPropagation(), true);
+    el.addEventListener('focus', () => unlockTyping(el));
   });
 
-  mm.addEventListener('change', async () => {
-    rebuildDays();
-    await loadTimeSlots();
+  // ===== 輸入合法化（09:00–21:30、15 分、結束 ≥ 開始+15） =====
+  function hmToMin(str){ if(!str) return null; const m=String(str).trim().match(/^(\d{1,2}):?(\d{2})$/); if(!m) return null; const h=Math.min(99,parseInt(m[1],10)), mm=parseInt(m[2],10); if(isNaN(h)||isNaN(mm)||mm>59) return null; return h*60+mm; }
+  function minToHM(min){ min=Math.max(0,Math.min(24*60-1,min)); const h=Math.floor(min/60), m=min%60; return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'); }
+  function snap(min, step=15){ return Math.round(min/step)*step; }
+
+  const OPEN = hmToMin("09:00"), CLOSE = hmToMin("21:30"), STEP = 15;
+
+  function normalize({fixEnd=true, snapToStep=false}={}){
+    let sv = hmToMin(s.value), ev = hmToMin(e.value);
+
+    if (sv!=null){ sv = Math.max(OPEN, Math.min(CLOSE, sv)); if (snapToStep) sv = snap(sv, STEP); s.value = minToHM(sv); }
+    if (ev!=null){ ev = Math.max(OPEN, Math.min(CLOSE, ev)); if (snapToStep) ev = snap(ev, STEP); }
+    if (fixEnd && sv!=null){ const minEnd = Math.min(CLOSE, sv + STEP); if (ev==null || ev < minEnd) ev = minEnd; }
+    if (ev!=null) e.value = minToHM(ev);
+
+    // 更新 flatpickr 的最小結束時間
+    const minEndStr = minToHM(Math.min((sv??OPEN)+STEP, CLOSE));
+    endPicker.set('minTime', minEndStr);
+
+    s.setCustomValidity(sv!=null && sv>=OPEN && sv<=CLOSE ? '' : '時間需在 09:00–21:30 且為 15 分單位');
+    e.setCustomValidity(ev!=null && ev>=OPEN && ev<=CLOSE && (sv==null || ev>=sv+STEP) ? '' : '結束時間需 ≥ 開始+15 分，且在 09:00–21:30');
+  }
+
+  // 分鐘兩位就自動貼齊（例如輸入 09:5「0」時立即對齊）
+  function autoSnapIfMinuteDone(el){
+    const m = String(el.value||'').match(/^(\d{1,2}):(\d{2})$/);
+    if (!m) return;
+    normalize({fixEnd:true, snapToStep:true});
+  }
+
+  s.addEventListener('input',  ()=>{ s.setCustomValidity(''); normalize({fixEnd:false, snapToStep:false}); autoSnapIfMinuteDone(s); });
+  e.addEventListener('input',  ()=>{ e.setCustomValidity(''); normalize({fixEnd:false, snapToStep:false}); autoSnapIfMinuteDone(e); });
+  ['blur','change'].forEach(evt=>{
+    s.addEventListener(evt, ()=> normalize({fixEnd:true,  snapToStep:true}));
+    e.addEventListener(evt, ()=> normalize({fixEnd:true,  snapToStep:true}));
   });
 
-  dd.addEventListener('change', loadTimeSlots);
+  // 初始一次
+  normalize();
 
-  loc.addEventListener('change', async () => {
-    await fetchDisabledDates();
-    rebuildDays();
-    await loadTimeSlots();
+  // 送出前最後把關
+  form.addEventListener('submit', (e)=>{
+    normalize({fixEnd:true, snapToStep:true});
+    if(!s.checkValidity() || !e.checkValidity()){
+      e.preventDefault(); e.stopPropagation();
+    }
   });
 });
 </script>

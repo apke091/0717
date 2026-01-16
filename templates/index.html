@@ -17,7 +17,14 @@
     margin: 0 1rem 1rem;
     padding: 1.25rem 1rem;
     border-radius: 12px;
-    background: linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,0));
+   background: linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,0));
+
+  }
+
+  /* ✅ 統一首頁版心：用 container-xxl 但左右更舒服 */
+  .home-shell{ padding-left: 16px; padding-right: 16px; }
+  @media (min-width: 992px){
+    .home-shell{ padding-left: 24px; padding-right: 24px; }
   }
 
   /* 功能卡片 hover 效果 */
@@ -92,117 +99,128 @@
   }
 </style>
 
-<!-- 🔝 Hero（吃 DB；無資料顯示 fallback） -->
-<div class="container-xxl hero-wrap">
-  <div id="heroCarouselIndex" class="carousel slide hero-carousel"
-       data-bs-ride="carousel" data-bs-interval="4000" aria-label="首頁輪播">
+<!-- ✅ 全頁統一寬度：container-xxl + home-shell -->
+<div class="container-xxl home-shell">
 
-    {% if banners and banners|length > 1 %}
-    <div class="carousel-indicators">
-      {% for b in banners %}
-      <button type="button" data-bs-target="#heroCarouselIndex" data-bs-slide-to="{{ loop.index0 }}"
-              class="{{ 'active' if loop.first }}" aria-current="{{ 'true' if loop.first }}"
-              aria-label="Slide {{ loop.index }}"></button>
-      {% endfor %}
-    </div>
-    {% endif %}
+  <!-- 🔝 Hero（吃 DB；無資料顯示 fallback） -->
+  <div class="hero-wrap">
+    <div id="heroCarouselIndex" class="carousel slide hero-carousel"
+         data-bs-ride="carousel" data-bs-interval="4000" aria-label="首頁輪播">
 
-    <div class="carousel-inner">
-      {% if banners and banners|length %}
+      {% if banners and banners|length > 1 %}
+      <div class="carousel-indicators">
         {% for b in banners %}
-        <div class="carousel-item {{ 'active' if loop.first }}">
-          <img src="{{ url_for('static', filename='hero/' ~ b.img) }}" class="d-block w-100" alt="{{ b.title or ('banner' ~ loop.index) }}">
-          {% if b.title or b.subtitle or b.link or b.badge %}
-          <div class="carousel-caption text-start">
-            {% if b.badge %}<span class="badge bg-light text-dark mb-2">{{ b.badge }}</span>{% endif %}
-            {% if b.title %}<h1 class="fw-bold text-white mb-1">{{ b.title }}</h1>{% endif %}
-            {% if b.subtitle %}<p class="text-white-50 mb-0">{{ b.subtitle }}</p>{% endif %}
-            {% if b.link %}<a href="{{ b.link }}" class="btn btn-primary btn-sm mt-3 rounded-3">了解更多</a>{% endif %}
-          </div>
-          {% endif %}
-        </div>
+        <button type="button" data-bs-target="#heroCarouselIndex" data-bs-slide-to="{{ loop.index0 }}"
+                class="{{ 'active' if loop.first }}" aria-current="{{ 'true' if loop.first }}"
+                aria-label="Slide {{ loop.index }}"></button>
         {% endfor %}
-      {% else %}
-        <div class="carousel-item active">
-          <img src="https://picsum.photos/1600/800?random=1" class="d-block w-100" alt="banner1">
-          <div class="carousel-caption text-start">
-            <h1 class="fw-bold text-white mb-1">歡迎來到精油工會</h1>
-            <p class="text-white-50 mb-0">推廣芳香療法與天然精油</p>
-          </div>
-        </div>
-        <div class="carousel-item">
-          <img src="https://picsum.photos/1600/800?random=2" class="d-block w-100" alt="banner2">
-          <div class="carousel-caption text-start">
-            <h1 class="fw-bold text-white mb-1">天然精油，守護您的生活</h1>
-            <p class="text-white-50 mb-0">探索多樣商品與教學影片</p>
-          </div>
-        </div>
-        <div class="carousel-item">
-          <img src="https://picsum.photos/1600/800?random=3" class="d-block w-100" alt="banner3">
-          <div class="carousel-caption text-start">
-            <h1 class="fw-bold text-white mb-1">加入我們的芳療社群</h1>
-            <p class="text-white-50 mb-0">健康生活由此開始</p>
-          </div>
-        </div>
+      </div>
       {% endif %}
-    </div>
 
-    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarouselIndex" data-bs-slide="prev" aria-label="上一張">
-      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-    </button>
-    <button class="carousel-control-next" type="button" data-bs-target="#heroCarouselIndex" data-bs-slide="next" aria-label="下一張">
-      <span class="carousel-control-next-icon" aria-hidden="true"></span>
-    </button>
-  </div>
-</div>
-
-<!-- 🟩 功能區塊（中等寬 .container-xl） -->
-<div class="container-xl py-5">
-  <div class="row g-4">
-    <div class="col-md-4">
-      <a href="/shop" class="text-decoration-none text-dark">
-        <div class="card h-100 shadow-sm feature-card"></div>
-      </a>
-    </div>
-    <div class="col-md-4">
-      <a href="/rent" class="text-decoration-none text-dark">
-        <div class="card h-100 shadow-sm feature-card">
-          <img src="https://cdna.artstation.com/p/assets/images/images/012/272/798/large/-3d-01.jpg?1533921415" class="card-img-top" alt="教室租借">
-          <div class="card-body">
-            <h5 class="card-title">🏫 教室租借</h5>
-            <p class="card-text text-secondary mb-0">租借本會教室舉辦課程與活動</p>
+      <div class="carousel-inner">
+        {% if banners and banners|length %}
+          {% for b in banners %}
+          <div class="carousel-item {{ 'active' if loop.first }}">
+            <img src="{{ url_for('static', filename='hero/' ~ b.img) }}" class="d-block w-100" alt="{{ b.title or ('banner' ~ loop.index) }}">
+            {% if b.title or b.subtitle or b.link or b.badge %}
+            <div class="carousel-caption text-start">
+              {% if b.badge %}<span class="badge bg-light text-dark mb-2">{{ b.badge }}</span>{% endif %}
+              {% if b.title %}<h1 class="fw-bold text-white mb-1">{{ b.title }}</h1>{% endif %}
+              {% if b.subtitle %}<p class="text-white-50 mb-0">{{ b.subtitle }}</p>{% endif %}
+              {% if b.link %}<a href="{{ b.link }}" class="btn btn-primary btn-sm mt-3 rounded-3">了解更多</a>{% endif %}
+            </div>
+            {% endif %}
           </div>
-        </div>
-      </a>
-    </div>
-    <div class="col-md-4">
-      <a href="/courses" class="text-decoration-none text-dark">
-        <div class="card h-100 shadow-sm feature-card">
-          <img src="https://imjaylin.com/wp-content/uploads/2020/09/FlexClip%E7%B7%9A%E4%B8%8A%E5%BD%B1%E7%89%87%E5%89%AA%E8%BC%AF%E5%B7%A5%E5%85%B7-1.jpg" class="card-img-top" alt="課程專區">
-          <div class="card-body">
-            <h5 class="card-title">📕 課程專區</h5>
-            <p class="card-text text-secondary mb-0">課程相關最新消息</p>
+          {% endfor %}
+        {% else %}
+          <div class="carousel-item active">
+            <img src="https://picsum.photos/1600/800?random=1" class="d-block w-100" alt="banner1">
+            <div class="carousel-caption text-start">
+              <h1 class="fw-bold text-white mb-1">歡迎來到精油工會</h1>
+              <p class="text-white-50 mb-0">推廣芳香療法與天然精油</p>
+            </div>
           </div>
-        </div>
-      </a>
+          <div class="carousel-item">
+            <img src="https://picsum.photos/1600/800?random=2" class="d-block w-100" alt="banner2">
+            <div class="carousel-caption text-start">
+              <h1 class="fw-bold text-white mb-1">天然精油，守護您的生活</h1>
+              <p class="text-white-50 mb-0">探索多樣商品與教學影片</p>
+            </div>
+          </div>
+          <div class="carousel-item">
+            <img src="https://picsum.photos/1600/800?random=3" class="d-block w-100" alt="banner3">
+            <div class="carousel-caption text-start">
+              <h1 class="fw-bold text-white mb-1">加入我們的芳療社群</h1>
+              <p class="text-white-50 mb-0">健康生活由此開始</p>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <button class="carousel-control-prev" type="button" data-bs-target="#heroCarouselIndex" data-bs-slide="prev" aria-label="上一張">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#heroCarouselIndex" data-bs-slide="next" aria-label="下一張">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+      </button>
     </div>
   </div>
-</div>
 
-<!-- 📰 最新消息（窄 .container-lg） -->
-<div class="container-lg pb-5">
-  <h4 class="mb-3">📢 最新消息</h4>
-  <ul class="list-group shadow-sm">
-    <li class="list-group-item d-flex justify-content-between align-items-center news-item">
-      <span class="badge bg-light text-dark badge-date">2025-07-10</span>
-      <span class="me-auto ms-3">精油使用教學影片上架囉！</span>
-      <a href="/video" class="btn btn-sm btn-outline-primary">查看</a>
-    </li>
-    <li class="list-group-item d-flex justify-content-between align-items-center news-item">
-      <span class="badge bg-light text-dark badge-date">2025-07-01</span>
-      <span class="me-auto ms-3">開放教室租借服務</span>
-      <a href="/rent" class="btn btn-sm btn-outline-primary">了解更多</a>
-    </li>
-  </ul>
+  <!-- 🟩 功能區塊：同寬（原本 xl -> 這裡不再縮） -->
+  <div class="py-5">
+    <div class="row g-4">
+      <div class="col-md-4">
+        <a href="/reviews" class="text-decoration-none text-dark">
+          <div class="card h-100 shadow-sm feature-card">
+           <img src="https://ibb.co/QvmDsYg9" class="card-img-top" alt="課程回顧">
+            <div class="card-body">
+              <h5 class="card-title">🏫 課程回顧</h5>
+              <p class="card-text text-secondary mb-0">回顧本會舉辦課程與活動</p>
+            </div>
+            </div>
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a href="/rent" class="text-decoration-none text-dark">
+          <div class="card h-100 shadow-sm feature-card">
+            <img src="https://cdna.artstation.com/p/assets/images/images/012/272/798/large/-3d-01.jpg?1533921415" class="card-img-top" alt="教室租借">
+            <div class="card-body">
+              <h5 class="card-title">🏫 教室租借</h5>
+              <p class="card-text text-secondary mb-0">租借本會教室舉辦課程與活動</p>
+            </div>
+          </div>
+        </a>
+      </div>
+      <div class="col-md-4">
+        <a href="/courses" class="text-decoration-none text-dark">
+          <div class="card h-100 shadow-sm feature-card">
+            <img src="https://imjaylin.com/wp-content/uploads/2020/09/FlexClip%E7%B7%9A%E4%B8%8A%E5%BD%B1%E7%89%87%E5%89%AA%E8%BC%AF%E5%B7%A5%E5%85%B7-1.jpg" class="card-img-top" alt="課程專區">
+            <div class="card-body">
+              <h5 class="card-title">📕 課程專區</h5>
+              <p class="card-text text-secondary mb-0">課程相關最新消息</p>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📰 最新消息：同寬（原本 lg -> 這裡不再縮） -->
+  <div class="pb-5">
+    <h4 class="mb-3">📢 最新消息</h4>
+    <ul class="list-group shadow-sm">
+      <li class="list-group-item d-flex justify-content-between align-items-center news-item">
+        <span class="badge bg-light text-dark badge-date">2025-07-10</span>
+        <span class="me-auto ms-3">精油使用教學影片上架囉！</span>
+        <a href="/video" class="btn btn-sm btn-outline-primary">查看</a>
+      </li>
+      <li class="list-group-item d-flex justify-content-between align-items-center news-item">
+        <span class="badge bg-light text-dark badge-date">2025-07-01</span>
+        <span class="me-auto ms-3">開放教室租借服務</span>
+        <a href="/rent" class="btn btn-sm btn-outline-primary">了解更多</a>
+      </li>
+    </ul>
+  </div>
+
 </div>
 {% endblock %}

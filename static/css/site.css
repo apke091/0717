@@ -1,0 +1,644 @@
+/* ==========================================================
+   site.css（整理版，可直接整份貼上）
+   目標：
+   1) 全站版心 1180px
+   2) 版面：左側選單 + 右側內容（像你示意圖）
+   3) 分割畫面：維持兩欄，寬度不夠就水平捲動（左右滑）
+========================================================== */
+
+/* =========================
+   全站寬度 / 變數
+========================= */
+:root{
+  --page-max: 1180px;
+  --admin-max: 1180px;
+
+  --brand-purple: #7c3aed;
+
+  /* ✅ 按鈕飽和度 */
+  --btn-sat: .86;
+  --btn-sat-hover: .94;
+  --btn-sat-active: .82;
+
+  /* ✅ navbar fixed-top 高度（側欄 sticky 用）
+     如果你的 navbar 不是 fixed-top，想消掉上方留白可改成 0px */
+  --topbar-h: 56px;
+
+  /* ✅ Layout */
+  --shell-pad: 16px;
+  --gap: 18px;
+  --aside-w: 270px;
+  --aside-w-sm: 240px;
+
+  /* ✅ Card */
+  --card-radius: 16px;
+  --card-shadow: 0 12px 30px rgba(83,70,186,.10);
+  --line: #eef0f7;
+  --muted: #6b7280;
+
+  /* ✅ 兩欄最小總寬（小於就左右滑） */
+  --grid-min: 980px;
+}
+
+/* 讓變數套用到 Bootstrap 容器 */
+.container, .container-sm, .container-md, .container-lg, .container-xl, .container-xxl{
+  max-width: var(--page-max);
+}
+
+/* 後台或特定頁想更寬：外層容器加 .admin-container */
+.admin-container{
+  max-width: var(--admin-max) !important;
+}
+
+body{
+  margin: 0;
+  font-family: "Noto Sans TC","微軟正黑體","Microsoft JhengHei",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* =========================
+   通用：表單/排版
+========================= */
+h1, h2 { color: #333; }
+
+form label{
+  display:block;
+  margin:10px 0 5px;
+}
+
+input[type="text"], input[type="password"], select{
+  width:100%;
+  padding:8px;
+  box-sizing:border-box;
+  margin-bottom:15px;
+}
+
+/* 不要把 Bootstrap 的 .btn 洗掉 */
+button:not(.btn){
+  background-color:#4285f4;
+  color:white;
+  border:none;
+  padding:10px 16px;
+  cursor:pointer;
+  border-radius:8px;
+  transition: background-color .2s ease, box-shadow .2s ease, transform .02s ease;
+}
+button:not(.btn):hover{ background-color:#2a66c9; }
+button:not(.btn):active{ transform: translateY(1px); }
+button:not(.btn):focus-visible{
+  outline:none;
+  box-shadow:0 0 0 3px rgba(66,133,244,.35);
+}
+
+video{ display:block; margin-bottom:10px; }
+
+/* 新建卡片外觀（用再加 <div class="card-wrap">） */
+.card-wrap{
+  background:#fff;
+  padding:30px;
+  border-radius:12px;
+  box-shadow:0 0 8px rgba(0,0,0,0.08);
+  margin:30px 0;
+}
+
+/* =========================
+   購物車數量徽章
+========================= */
+.cart-badge{
+  display:inline-block !important;
+  min-width:1.6em;
+  padding:2px 10px;
+  border-radius:999px;
+  color:#fff;
+  font-weight:700;
+  font-size:.78rem;
+  line-height:1.2;
+  border:1px solid rgba(255,255,255,.45);
+  text-shadow:0 1px 0 rgba(0,0,0,.15);
+  box-shadow:0 2px 10px rgba(0,0,0,.15);
+  transform-origin:center;
+}
+@keyframes cartPop{
+  0%{transform:scale(.9)}
+  70%{transform:scale(1.08)}
+  100%{transform:scale(1)}
+}
+.cart-badge.pop,
+a.nav-link .cart-badge.pop{ animation:cartPop .22s ease; }
+
+.cart-badge.g-purple{
+  background:linear-gradient(135deg,#c084fc,#7c3aed);
+  box-shadow:0 2px 10px rgba(124,58,237,.35);
+}
+
+/* 白色膠囊（高對比） */
+a.nav-link .cart-badge{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:1.6em; padding:2px 10px; border-radius:9999px;
+  background:#ffffff;
+  color:#1f2937 !important;
+  font-weight:700; font-size:.78rem; line-height:1.1;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  border:1px solid rgba(2,6,23,.08);
+  box-shadow:
+    0 8px 18px rgba(2,6,23,.10),
+    inset 0 1px 0 rgba(255,255,255,.9);
+}
+a.nav-link .cart-badge.ring-purple{
+  border-color: rgba(124,58,237,.35);
+  box-shadow:
+    0 0 0 2px rgba(124,58,237,.15),
+    0 8px 18px rgba(2,6,23,.10),
+    inset 0 1px 0 rgba(255,255,255,.9);
+}
+
+/* =========================
+   Hero arrows — 玻璃感白箭頭
+========================= */
+.hero-carousel .carousel-control-prev,
+.hero-carousel .carousel-control-next{
+  --hero-arrow-size: 52px;
+  --hero-arrow-bg: rgba(16,16,16,.45);
+  --hero-arrow-bg-hover: rgba(16,16,16,.70);
+  --hero-arrow-border: rgba(255,255,255,.35);
+  --hero-arrow-icon: #fff;
+
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  width:var(--hero-arrow-size);
+  height:var(--hero-arrow-size);
+  opacity:1;
+  border-radius:999px;
+  background:var(--hero-arrow-bg);
+  border:1px solid var(--hero-arrow-border);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow:0 8px 22px rgba(0,0,0,.25);
+  transition: background .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+.hero-carousel .carousel-control-prev{ left:12px; }
+.hero-carousel .carousel-control-next{ right:12px; }
+
+.hero-carousel .carousel-control-prev:hover,
+.hero-carousel .carousel-control-next:hover{
+  background: var(--hero-arrow-bg-hover);
+  transform: translateY(-50%) scale(1.06);
+  box-shadow: 0 12px 30px rgba(0,0,0,.35);
+}
+.hero-carousel .carousel-control-prev:active,
+.hero-carousel .carousel-control-next:active{
+  transform: translateY(-50%) scale(.96);
+}
+
+.hero-carousel .carousel-control-prev-icon,
+.hero-carousel .carousel-control-next-icon{
+  width:18px;
+  height:18px;
+  background: var(--hero-arrow-icon);
+  background-image:none;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-repeat:no-repeat;
+          mask-repeat:no-repeat;
+  -webkit-mask-position:center;
+          mask-position:center;
+}
+.hero-carousel .carousel-control-prev-icon{
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M10 3 L5 8 L10 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+          mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M10 3 L5 8 L10 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.hero-carousel .carousel-control-next-icon{
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 3 L11 8 L6 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+          mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6 3 L11 8 L6 13' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.hero-carousel .carousel-control-prev:focus-visible,
+.hero-carousel .carousel-control-next:focus-visible{
+  outline:none;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.6);
+}
+@media (max-width:576px){
+  .hero-carousel .carousel-control-prev,
+  .hero-carousel .carousel-control-next{
+    --hero-arrow-size: 44px;
+  }
+}
+
+/* 文章/回顧內容裡的媒體不要超出容器 */
+.post-body img,
+.post-body video{
+  max-width:100%;
+  height:auto;
+  display:block;
+  margin:0 auto;
+  border-radius:12px;
+}
+
+/* =========================
+   Footer 深色版
+========================= */
+.footer-neo,
+.footer-neo .container,
+.footer-neo .ft-legal{
+  border-radius:0 !important;
+  box-shadow:none !important;
+}
+
+.footer-neo.footer-dark{
+  background:
+    radial-gradient(800px 420px at 20% 0%, rgba(108,99,255,.18), transparent 55%),
+    radial-gradient(700px 380px at 85% -10%, rgba(255,138,212,.14), transparent 50%),
+    linear-gradient(180deg, #0f1220 0%, #12162a 100%);
+  border-top:1px solid rgba(255,255,255,.06);
+  color:#e6e9f4;
+}
+.footer-neo.footer-dark .ft-title{
+  font-weight:800; letter-spacing:.3px;
+  background: linear-gradient(135deg, #6b8cff, #9c6bff, #ff8ad4);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  text-shadow:0 0 22px rgba(156,107,255,.25);
+}
+.footer-neo.footer-dark .ft-list{ list-style:none; padding:0; margin:0; }
+.footer-neo.footer-dark .ft-list li{ margin:.45rem 0; }
+.footer-neo.footer-dark .ft-list a{
+  color:#aab3d8;
+  border-bottom:1px dashed transparent;
+  transition: color .18s ease, border-color .18s ease, transform .18s ease;
+  text-decoration:none;
+}
+.footer-neo.footer-dark .ft-list a:hover,
+.footer-neo.footer-dark .ft-list a:focus-visible{
+  color:#ffffff;
+  border-color: rgba(156,107,255,.35);
+  transform: translateX(2px);
+  outline:none;
+}
+.footer-neo.footer-dark .ft-social{
+  width:36px; height:36px; border-radius:999px;
+  display:inline-flex; align-items:center; justify-content:center;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  color:#cdd6ff;
+  box-shadow:0 8px 28px rgba(108,99,255,.20);
+  text-decoration:none;
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease, color .16s ease;
+}
+.footer-neo.footer-dark .ft-social:hover{
+  transform: translateY(-2px);
+  background: rgba(108,99,255,.18);
+  color:#fff;
+  box-shadow:0 12px 34px rgba(156,107,255,.28);
+}
+.footer-neo.footer-dark .ft-social img{ filter:none; }
+
+.footer-neo.footer-dark .ft-legal{
+  background: linear-gradient(90deg, rgba(107,140,255,.18), rgba(156,107,255,.18));
+  border-top:1px solid rgba(255,255,255,.08)!important;
+}
+.footer-neo.footer-dark .ft-legal .text-muted{ color:#c9cffa!important; }
+.footer-neo.footer-dark .container{ max-width: var(--page-max, 1080px); }
+
+@media (max-width:575.98px){
+  .footer-neo.footer-dark .ft-title{ margin-top:.25rem; }
+  .footer-neo.footer-dark .ft-list li{ margin:.38rem 0; }
+}
+
+/* 需要使用時把 footer 推到首屏之外（你若不想推，改 0 或移除） */
+.no-footer-first-fold main{
+  min-height: calc(100vh + 180px);
+}
+
+/* =========================
+   動畫可及性：減少動效
+========================= */
+@media (prefers-reduced-motion: reduce){
+  *{
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+    scroll-behavior:auto !important;
+  }
+}
+
+/* =========================
+   ✅ 按鈕飽和度降低
+========================= */
+.btn:not(.btn-link):not(.btn-close){
+  filter: saturate(var(--btn-sat));
+}
+.btn:not(.btn-link):not(.btn-close):hover{
+  filter: saturate(var(--btn-sat-hover));
+}
+.btn:not(.btn-link):not(.btn-close):active{
+  filter: saturate(var(--btn-sat-active));
+}
+
+button:not(.btn),
+input[type="submit"],
+input[type="button"],
+input[type="reset"]{
+  filter: saturate(var(--btn-sat));
+}
+button:not(.btn):hover,
+input[type="submit"]:hover,
+input[type="button"]:hover,
+input[type="reset"]:hover{
+  filter: saturate(var(--btn-sat-hover));
+}
+
+/* 降低紫色飽和度：btn-primary */
+.btn-primary{
+  --bs-btn-bg: #7869d6;
+  --bs-btn-border-color: #7869d6;
+  --bs-btn-hover-bg: #6f61cd;
+  --bs-btn-hover-border-color: #6f61cd;
+  --bs-btn-active-bg: #6658c3;
+  --bs-btn-active-border-color: #6658c3;
+  --bs-btn-focus-shadow-rgb: 120,105,214;
+}
+
+/* ==========================================================
+   ✅ Layout：示意圖版（左選單 + 右內容）
+   分割畫面維持兩欄：用水平捲動
+========================================================== */
+
+/* 如果 navbar 是 fixed-top，需要預留高度；不是 fixed-top 就把 --topbar-h 設 0 */
+.app-main-wrap{
+  padding-top: var(--topbar-h);
+  overflow-x: auto;                 /* ✅ 寬度不足 → 左右滑 */
+  -webkit-overflow-scrolling: touch;
+}
+
+.site-shell{
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: var(--shell-pad);
+}
+
+/* ✅ 兩欄：固定最小總寬，小於就水平捲動 */
+.site-grid{
+  display: grid;
+  grid-template-columns: var(--aside-w) minmax(0, 1fr);
+  gap: var(--gap);
+  align-items: start;
+
+  min-width: var(--grid-min);       /* ✅ 讓分割畫面維持兩欄 */
+}
+
+/* 左側 sticky 容器 */
+.site-aside{
+  position: sticky;
+  top: calc(var(--topbar-h) + 16px);
+  height: calc(100vh - var(--topbar-h) - 32px);
+}
+
+/* 右側大白卡 */
+.site-main-card{
+  background: rgba(255,255,255,.92);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  border: 1px solid rgba(238,240,247,.9);
+  padding: 18px;
+}
+
+/* 右側內容不要撐爆 */
+.site-main,
+.site-main-card{
+  min-width: 0;
+}
+
+/* navbar 內容跟版心一致（不改 navbar.html 也能置中） */
+.navbar .container,
+.navbar .container-fluid{
+  max-width: var(--page-max);
+}
+
+/* ==========================================================
+   ✅ Sidebar（沿用你原 class：app-sidebar）
+   改成示意圖「白卡 + 標題條 + 列表分隔線」
+========================================================== */
+.app-sidebar{ width: 100%; height: 100%; }
+.app-sidebar ul{ list-style:none; padding:0; margin:0; }
+.app-sidebar a{ text-decoration:none !important; }
+
+/* 外框：白卡 */
+.app-sidebar .sidebar-inner{
+  height:100%;
+  overflow:auto;
+  border-radius: 16px;
+  padding: 0;                       /* 讓標題貼齊 */
+  background: rgba(255,255,255,.92);
+  border: 1px solid rgba(238,240,247,.95);
+  box-shadow: var(--card-shadow);
+}
+
+/* MENU 標題條 */
+.app-sidebar .sidebar-title{
+  margin: 0;
+  padding: 12px 14px;
+  font-weight: 900;
+  letter-spacing: .6px;
+  color: #2c2f45;
+  border-bottom: 1px solid rgba(238,240,247,.95);
+  background: linear-gradient(135deg, rgba(131,93,255,.22), rgba(255,255,255,0));
+}
+
+/* 清單：改成列表列 */
+.app-sidebar .sidebar-list{
+  display:flex;
+  flex-direction:column;
+  gap:0;
+  padding: 6px 0;
+}
+
+/* 主連結：列表列樣式 */
+.app-sidebar .slink{
+  position: relative;
+  width: 100%;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:10px;
+
+  padding: 11px 14px;
+  border-radius: 0;
+
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+
+  color: #2c2f45 !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color:#2c2f45 !important;
+
+  transition: background .14s ease;
+}
+
+/* 分隔線 */
+.app-sidebar .slink + .slink{
+  border-top: 1px solid rgba(238,240,247,.9);
+}
+
+/* icon */
+.app-sidebar .slink i{
+  width: 20px;
+  font-size: 1.05rem;
+  opacity: .85;
+  display:inline-flex;
+  justify-content:center;
+  color:#2c2f45 !important;
+}
+
+/* 文字 */
+.app-sidebar .slink span{
+  font-weight: 800;
+  letter-spacing: .2px;
+  color:#2c2f45 !important;
+}
+
+/* 右側箭頭 */
+.app-sidebar .slink::after{
+  content: "›";
+  margin-left: auto;
+  font-size: 1.25rem;
+  line-height: 1;
+  opacity: .28;
+  transform: translateY(-1px);
+  color:#2c2f45;
+}
+
+/* hover */
+.app-sidebar .slink:hover{
+  background: #f7f7ff;
+}
+
+/* active：左側紫條 + 淡底 */
+.app-sidebar .slink.active{
+  background: rgba(124,58,237,.08);
+  border-left: 4px solid rgba(124,58,237,.55);
+  padding-left: 10px; /* 扣掉左邊 4px */
+}
+.app-sidebar .slink.active::after{ opacity: .45; }
+
+/* 分隔/標題（保留你原本結構用） */
+.app-sidebar .sidebar-hr{
+  height:1px;
+  background: rgba(44,47,69,.14);
+  margin: 12px 6px 8px;
+}
+.app-sidebar .sidebar-cap{
+  font-size: 12px;
+  color: rgba(44,47,69,.60);
+  font-weight: 900;
+  padding: 0 8px 4px;
+}
+
+/* collapse 那列：不要右側 ›，用你原本箭頭 */
+.app-sidebar .slink-collapse{ justify-content: space-between; }
+.app-sidebar .slink-collapse::after{ display:none; }
+.app-sidebar .arrow{
+  opacity: .45;
+  transition: transform .2s ease, opacity .2s ease;
+  color:#2c2f45;
+}
+.app-sidebar .slink-collapse[aria-expanded="true"] .arrow{
+  transform: rotate(90deg);
+  opacity: .65;
+}
+
+/* 子連結：保持簡潔 */
+.app-sidebar .sublink{
+  display:block;
+  margin: 6px 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  background: rgba(255,255,255,.70);
+  border: 1px solid rgba(238,240,247,.95);
+  box-shadow: 0 8px 18px rgba(83,70,186,.08);
+
+  color: rgba(44,47,69,.92) !important;
+  -webkit-text-fill-color: rgba(44,47,69,.92) !important;
+  text-decoration:none !important;
+  font-weight: 750;
+
+  transition: background .14s ease, box-shadow .14s ease;
+}
+.app-sidebar .sublink:hover{
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 12px 22px rgba(83,70,186,.12);
+}
+.app-sidebar .sublink.active{
+  background: rgba(124,58,237,.08);
+  border-color: rgba(124,58,237,.18);
+}
+
+/* 分割畫面常見：左欄縮窄 */
+@media (max-width: 992px){
+  :root{ --aside-w: var(--aside-w-sm); }
+  .site-grid{
+    grid-template-columns: var(--aside-w) minmax(0, 1fr);
+  }
+}
+
+/* ==========================================================
+   ✅ 不要在格子內滑動：內容不夠就用整頁上下捲
+   ✅ 內容太多時：左欄才會自己出現捲動（不會一直有捲軸）
+========================================================== */
+
+/* 1) 左欄不要固定高度（讓整頁捲動） */
+.site-aside{
+  height: auto !important;
+}
+.site-aside .app-sidebar{
+  height: auto !important;
+}
+
+/* 2) 側欄內容：平常不出現內部捲動；真的太長才出現 */
+.app-sidebar .sidebar-inner{
+  height: auto !important;
+  max-height: calc(100vh - var(--topbar-h) - 32px);
+  overflow: auto; /* 內容超過 max-height 才會出現捲動條 */
+}
+
+/* 3) 取消「硬把 footer 推到首屏外」造成的大空白（黑色區塊上方空一大塊） */
+.no-footer-first-fold main{
+  min-height: 100vh !important; /* 或者你也可以直接把那段規則刪掉 */
+}
+
+/* ==========================================================
+   ✅ 左右欄「自然延伸」：誰長就往下長，整頁捲動
+========================================================== */
+
+/* 1) 左欄不要固定高度（解除同高/解除卡住） */
+.site-aside{
+  height: auto !important;
+  position: sticky; /* 你要它黏住就留著，不要黏住就改成 static */
+  top: calc(var(--topbar-h) + 16px);
+}
+
+/* 2) sidebar 本體也不要硬撐高 */
+.site-aside .app-sidebar{
+  height: auto !important;
+}
+
+/* 3) 側欄內容不要在卡片內捲動（改用整頁捲動） */
+.app-sidebar .sidebar-inner{
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* 4) 右欄也允許自然變長（保險） */
+.site-main,
+.site-main-card{
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+/* 5) 取消「硬把 footer 推到首屏外」造成大空白（保險） */
+.no-footer-first-fold main{
+  min-height: 100vh !important;
+}

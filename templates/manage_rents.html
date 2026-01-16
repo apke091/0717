@@ -30,7 +30,7 @@
                   <th>申請時間</th>
                   <th>場地</th>
                   <th>日期</th>
-                  <th>時段</th>
+                  <th>時間</th>  {# 由「時段」改成「時間」 #}
                   <th>聯絡人</th>
                   <th>電話</th>
                   <th>電子郵件</th>
@@ -42,10 +42,17 @@
               <tbody>
                 {% for r in rents %}
                 <tr>
-                  <td class="text-nowrap">{{ r.submitted_at }}</td>
+                  <td class="text-nowrap">{{ r.submitted_at|strftime("%Y-%m-%d %H:%M") }}</td>
                   <td>{{ r.location }}</td>
-                  <td class="text-nowrap">{{ r.date }}</td>
-                  <td class="text-nowrap">{{ r.time_slot }}</td>
+                  <td class="text-nowrap">{{ r.date|strftime("%Y-%m-%d") }}</td>
+
+                  {# ✅ 相容顯示：優先用 start_time/end_time；沒有就從 time_slot 拆 #}
+                  {% set s = r.start_time or (r.time_slot|replace('–','-')|split('-')[0]) %}
+                  {% set e = r.end_time   or (r.time_slot|replace('–','-')|split('-')[1]) %}
+                  <td class="text-nowrap">
+                    {{ (s|string)[:5] }} – {{ (e|string)[:5] }}
+                  </td>
+
                   <td>{{ r.name }}</td>
                   <td class="text-nowrap">{{ r.phone }}</td>
                   <td>
@@ -60,7 +67,6 @@
                     {% elif r.status == 'approved' %}
                       <span class="badge text-bg-success">已核准</span>
                     {% elif r.status == 'rejected' %}
-                      <!-- 👇 駁回改成紅色 -->
                       <span class="badge text-bg-danger">已駁回</span>
                     {% else %}
                       <span class="badge text-bg-secondary">{{ r.status }}</span>

@@ -53,6 +53,23 @@ def init_db():
         # 這兩行是保險，已存在就不會新增
         cur.execute("ALTER TABLE rent_requests ADD COLUMN IF NOT EXISTS email TEXT;")
         cur.execute("ALTER TABLE rent_requests ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';")
+        # >>> 新增：自由起訖時間欄位（若不存在就加）
+        cur.execute("ALTER TABLE rent_requests ADD COLUMN IF NOT EXISTS start_time TIME;")
+        cur.execute("ALTER TABLE rent_requests ADD COLUMN IF NOT EXISTS end_time   TIME;")
+
+        # >>> 新增：把舊的 time_slot（09:00-12:00 / 09:00–12:00）回填到新欄位
+        cur.execute("""
+            UPDATE rent_requests
+            SET start_time = split_part(replace(time_slot,'–','-'), '-', 1)::time,
+                end_time   = split_part(replace(time_slot,'–','-'), '-', 2)::time
+            WHERE time_slot IS NOT NULL
+              AND (start_time IS NULL OR end_time IS NULL);
+        """)
+
+        # >>> 建索引：之後查詢撞時段會更快
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_rent_loc_date ON rent_requests(location, date);")
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS idx_rent_loc_date_time ON rent_requests(location, date, start_time, end_time);")
 
         # ========== cart_items ==========
         cur.execute("""

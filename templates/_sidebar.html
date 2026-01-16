@@ -1,0 +1,82 @@
+{# templates/_sidebar.html #}
+<aside class="app-sidebar">
+  <div class="sidebar-inner">
+    <div class="sidebar-title">MENU</div>
+
+    <ul class="sidebar-list">
+      <li>
+        <a class="slink {% if request.endpoint=='index' %}active{% endif %}" href="{{ url_for('index') }}">
+          <i class="bi bi-house-door"></i><span>首頁</span>
+        </a>
+      </li>
+
+      <li>
+        <a class="slink {% if request.endpoint=='about' %}active{% endif %}" href="{{ url_for('about') }}">
+          <i class="bi bi-info-circle"></i><span>關於本會</span>
+        </a>
+      </li>
+
+      <li>
+        <a class="slink {% if request.endpoint=='news' %}active{% endif %}" href="{{ url_for('news') }}">
+          <i class="bi bi-megaphone"></i><span>最新資訊</span>
+        </a>
+      </li>
+
+      <li>
+        <a class="slink {% if request.endpoint=='downloads' %}active{% endif %}" href="{{ url_for('downloads') }}">
+          <i class="bi bi-download"></i><span>下載專區</span>
+        </a>
+      </li>
+
+      <li>
+        <a class="slink {% if request.endpoint=='rent' %}active{% endif %}" href="{{ url_for('rent') }}">
+          <i class="bi bi-calendar2-week"></i><span>教室租借</span>
+        </a>
+      </li>
+
+      <li>
+        <a class="slink {% if request.endpoint=='contact' %}active{% endif %}" href="{{ url_for('contact') }}">
+          <i class="bi bi-chat-dots"></i><span>聯絡我們</span>
+        </a>
+      </li>
+
+      <li>
+        <a class="slink {% if request.endpoint=='courses' %}active{% endif %}" href="{{ url_for('courses') }}">
+          <i class="bi bi-journal-text"></i><span>課程專區</span>
+        </a>
+      </li>
+
+      <li>
+        <a class="slink {% if request.path.startswith('/reviews') %}active{% endif %}" href="{{ url_for('reviews') }}">
+          <i class="bi bi-images"></i><span>課程回顧</span>
+        </a>
+      </li>
+    </ul>
+
+    {% if session.get('role') == 'admin' %}
+      <div class="sidebar-hr"></div>
+      <div class="sidebar-cap">綜合管理</div>
+
+      <!-- ✅ 管理折疊：同一套卡片外觀 + 保留 collapse -->
+      <a class="slink slink-collapse collapsed"
+         data-bs-toggle="collapse" href="#adminMenu"
+         role="button" aria-expanded="false" aria-controls="adminMenu">
+        <span class="d-inline-flex align-items-center gap-2">
+          <i class="bi bi-gear"></i><span>綜合管理</span>
+        </span>
+        <span class="arrow">▶</span>
+      </a>
+
+      <div class="collapse ps-2 mt-2" id="adminMenu">
+        <a class="sublink {% if request.endpoint=='manage_users' %}active{% endif %}" href="{{ url_for('manage_users') }}">帳號管理</a>
+        <a class="sublink {% if request.endpoint=='manage_products' %}active{% endif %}" href="{{ url_for('manage_products') }}">商品管理</a>
+        <a class="sublink {% if request.endpoint=='manage_rents' %}active{% endif %}" href="{{ url_for('manage_rents') }}">確認租借資訊</a>
+        <a class="sublink {% if request.endpoint=='upload_file' %}active{% endif %}" href="{{ url_for('upload_file') }}">上傳檔案</a>
+        <a class="sublink {% if request.endpoint=='edit_about' %}active{% endif %}" href="{{ url_for('edit_about') }}">編輯關於</a>
+        <a class="sublink {% if request.endpoint=='manage_courses' %}active{% endif %}" href="{{ url_for('manage_courses') }}">課程資訊</a>
+        <a class="sublink {% if request.endpoint=='admin_reviews' %}active{% endif %}" href="{{ url_for('admin_reviews') }}">課程回顧管理</a>
+        <a class="sublink {% if request.endpoint=='admin_banners' %}active{% endif %}" href="{{ url_for('admin_banners') }}">Banner 管理</a>
+      </div>
+    {% endif %}
+  </div>
+</aside>

@@ -5,8 +5,16 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from functools import wraps
 from dotenv import load_dotenv
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, time
 TZ = timezone(timedelta(hours=8))  # Asia/Taipei
+BUSINESS_OPEN  = time(9, 0)     # 最早可借
+BUSINESS_CLOSE = time(21, 30)   # 最晚結束
+STEP_MINUTES   = 15             # 每 15 分鐘
+MIN_DURATION   = timedelta(minutes=15)  # 最短 15 分鐘（與前端一致）
+MAX_DURATION   = timedelta(hours=9)     # 最長 9 小時（可調）
+
+
+
 from werkzeug.utils import secure_filename
 from flask import send_file, abort
 import flask as _flask
@@ -308,15 +316,13 @@ def get_booked_slots(conn, y, m, d, location):
 
 def delete_expired_rent_requests():
     """
-    刪除已過期的核准租借（以 TIME_SLOTS 為準）
-    規則：只刪 status='approved'，且
-      - 日期小於今天，或
-      - 同日且該時段的「結束時間」已過
+    刪除已過去的核准租借：
+      - 日期小於今天；或
+      - 同日且 end_time（或 time_slot 的結束）已過
     """
     now = datetime.now(TZ)
     today = now.date()
     now_hm = now.strftime("%H:%M")
-    end_map = {slot: end for (slot, _start, end) in TIME_SLOTS}
 
     conn = get_db_connection()
     with conn:
@@ -325,17 +331,15 @@ def delete_expired_rent_requests():
                 DELETE FROM rent_requests
                 WHERE status='approved' AND date < %s
             """, (today,))
-            for slot, end_hm in end_map.items():
-                slot_en  = slot
-                slot_emd = slot.replace("-", "–")
-                cur.execute("""
-                    DELETE FROM rent_requests
-                    WHERE status = 'approved'
-                      AND date = %s
-                      AND (time_slot = %s OR time_slot = %s)
-                      AND %s >= %s
-                """, (today, slot_en, slot_emd, now_hm, end_hm))
+            cur.execute("""
+                DELETE FROM rent_requests
+                WHERE status='approved' AND date = %s
+                  AND COALESCE(end_time,
+                               split_part(replace(time_slot,'–','-'), '-', 2)::time
+                      ) <= %s::time
+            """, (today, now_hm))
     conn.close()
+
 
 # 管理員權限驗證
 def admin_required(f):
@@ -542,59 +546,114 @@ def news():
     return render_template("news.html")
 
 # ===== 租借 =====
+# ===== 租借（自由起訖時間 + 舊 time_slot 仍寫入顯示字串）=====
 @app.route("/rent", methods=["GET", "POST"])
 def rent():
     if request.method == "POST":
         location = (request.form.get("location") or "").strip()
-        date = (request.form.get("date") or "").strip()
-        time_slot = (request.form.get("time_slot") or "").strip()
-        name = (request.form.get("name") or "").strip()
+        date_str = (request.form.get("date") or "").strip()
+        start_hm = (request.form.get("start_time") or "").strip()
+        end_hm   = (request.form.get("end_time") or "").strip()
+        name  = (request.form.get("name") or "").strip()
         phone = (request.form.get("phone") or "").strip()
         email = (request.form.get("email") or "").strip()
-        note = (request.form.get("note") or "").strip()
+        note  = (request.form.get("note") or "").strip()
 
-        if not (location and date and time_slot and name and phone):
+        if not (location and date_str and start_hm and end_hm and name and phone):
             flash("❌ 必填欄位未填寫完整"); return redirect(url_for("rent"))
 
-        today = datetime.now(TZ).date()
+        # 日期檢查
         try:
-            selected_date = datetime.strptime(date, "%Y-%m-%d").date()
+            d = datetime.strptime(date_str, "%Y-%m-%d").date()
         except ValueError:
             flash("❌ 日期格式錯誤"); return redirect(url_for("rent"))
-        if selected_date < today:
+        if d < datetime.now(TZ).date():
             flash("❌ 不能選擇今天以前的日期"); return redirect(url_for("rent"))
 
+        # 手機 / Email
         if not PHONE_RE.match(phone):
             flash("❌ 電話格式錯誤，請輸入 09xx-xxx-xxx（可不輸入連字號）"); return redirect(url_for("rent"))
-
-        email = (email or "").strip()
-        if not email:            flash("❌ Email 為必填"); return redirect(url_for("rent"))
-        if not EMAIL_RE.match(email): flash("❌ Email 格式不正確，請重新輸入"); return redirect(url_for("rent"))
-
+        if not email:
+            flash("❌ Email 為必填"); return redirect(url_for("rent"))
+        if not EMAIL_RE.match(email):
+            flash("❌ Email 格式不正確，請重新輸入"); return redirect(url_for("rent"))
         digits = re.sub(r"\D", "", phone)[:10]
         if len(digits) != 10:
             flash("❌ 電話需為 10 碼手機號碼（09xx-xxx-xxx）"); return redirect(url_for("rent"))
         phone = f"{digits[:4]}-{digits[4:7]}-{digits[7:]}"
 
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT 1 FROM rent_requests
-            WHERE location=%s AND date=%s AND time_slot=%s
-              AND status IN ('pending','approved')
-        """, (location, date, time_slot))
-        if cur.fetchone():
-            conn.close(); flash("❌ 此時段已被預約"); return redirect(url_for("rent"))
+        # 解析 HH:MM
+        def _parse_hm(hm: str):
+            m = re.match(r"^(\d{1,2}):(\d{2})$", hm)
+            if not m: return None
+            hh, mm = int(m.group(1)), int(m.group(2))
+            if not (0 <= hh <= 23 and 0 <= mm <= 59): return None
+            return time(hh, mm)
 
-        cur.execute("""
-            INSERT INTO rent_requests
-                (location, date, time_slot, name, phone, email, note, status, submitted_at)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, 'pending', NOW())
-        """, (location, date, time_slot, name, phone, email, note))
-        conn.commit(); conn.close()
+        s_t = _parse_hm(start_hm)
+        e_t = _parse_hm(end_hm)
+        if not s_t or not e_t:
+            flash("❌ 時間格式錯誤，請輸入 HH:MM"); return redirect(url_for("rent"))
 
-        flash("✅ 已送出申請，請等待審核"); return redirect(url_for("rent"))
+        # 15 分 & 範圍 & 順序（DB 也會擋，再先提示）
+        def _is_step_15(t: time): return (t.hour*60 + t.minute) % 15 == 0
+        if not (_is_step_15(s_t) and _is_step_15(e_t)):
+            flash("❌ 時間需以 15 分鐘為單位（如 09:00、09:15、09:30…）"); return redirect(url_for("rent"))
+        if not (s_t < e_t):
+            flash("❌ 結束時間需晚於開始時間"); return redirect(url_for("rent"))
+        if s_t < BUSINESS_OPEN or e_t > BUSINESS_CLOSE:
+            flash("❌ 租借時間需在 09:00～21:30 之間"); return redirect(url_for("rent"))
 
+        time_slot_label = f"{s_t.strftime('%H:%M')}–{e_t.strftime('%H:%M')}"  # 顯示用
+
+        # 寫入（有 GiST 排他約束防重疊）
+        try:
+            conn = get_db_connection()
+            with conn:
+                with conn.cursor() as cur:
+                    # 應用層再檢查一次重疊（雙保險）
+                    cur.execute("""
+                        SELECT 1
+                        FROM rent_requests
+                        WHERE location=%s AND date=%s
+                          AND status IN ('pending','approved')
+                          AND start_time IS NOT NULL AND end_time IS NOT NULL
+                          AND tsrange((date + start_time)::timestamp,
+                                      (date + end_time)::timestamp, '[)')
+                              &&
+                              tsrange(%s::timestamp, %s::timestamp, '[)')
+                        LIMIT 1
+                    """, (location, d, datetime.combine(d, s_t), datetime.combine(d, e_t)))
+                    if cur.fetchone():
+                        conn.close()
+                        flash("❌ 這個時段已被其他申請佔用，請改時間"); return redirect(url_for("rent"))
+
+                    cur.execute("""
+                        INSERT INTO rent_requests
+                          (location, date, time_slot, start_time, end_time,
+                           name, phone, email, note, status, submitted_at)
+                        VALUES
+                          (%s, %s, %s, %s, %s,
+                           %s, %s, %s, %s, 'pending', NOW())
+                    """, (location, d, time_slot_label, s_t, e_t,
+                          name, phone, email, note))
+            conn.close()
+        except Exception as e:
+            msg = str(e)
+            if "excl_rent_overlap" in msg:
+                flash("❌ 這個時段已被佔用，請改時間")
+            elif "chk_rent_time_step15" in msg:
+                flash("❌ 時間需以 15 分鐘為單位")
+            elif "chk_rent_time_order" in msg:
+                flash("❌ 結束時間需晚於開始時間")
+            else:
+                flash("❌ 送出失敗，請稍後再試")
+            return redirect(url_for("rent"))
+
+        flash("✅ 已送出申請，請等待審核")
+        return redirect(url_for("rent"))
+
+    # GET
     return render_template("rent.html", now=datetime.now(TZ).isoformat())
 
 @app.route("/admin/banners", methods=["GET", "POST"])

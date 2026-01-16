@@ -14,13 +14,13 @@
   <!-- 你原本的站內樣式（保留） -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
-  <!-- 新增：統一全站寬度的覆蓋檔，務必放最後 -->
+  <!-- 統一全站寬度覆蓋（放最後） -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=20251021">
 
   <style>
     body{
       font-family:'Noto Sans TC',sans-serif;
-      background-color:#f5f0fa; /* 淡紫色 */
+      background-color:#f5f0fa;
     }
     .frosted-bg{
       background-color:#fff;
@@ -29,13 +29,14 @@
       padding:2rem;
     }
   </style>
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 </head>
 
-<!-- 讓頁尾黏底：直向 flex 版型；加入 body_class 可供子頁覆寫 -->
+<!-- ✅ 改回黏底結構：footer 才會到底 -->
 <body class="d-flex flex-column min-vh-100 {% block body_class %}no-footer-first-fold{% endblock %}">
 
-  <!-- ✅ 導覽列 -->
+  <!-- ✅ 上面那條：完全不動 -->
   {% include "navbar.html" %}
 
   <!-- ✅ Flash（保留你的原樣） -->
@@ -104,57 +105,8 @@
     .alert-danger .flash-progress{color:#dc2626}
     .alert-warning .flash-progress{color:#d97706}
     .alert-info .flash-progress{color:#2563eb}
-    /* ========== Sleek Footer ========== */
-    :root{
-      --brand1:#7c6bff;
-      --brand2:#a06bff;
-      --ink:#2c2f45;
-      --muted:#6a738a;
-      --line:#ece9f6;
-      --soft:#f6f2ff;
-    }
-    .footer-neo{
-      background: linear-gradient(180deg, var(--soft) 0%, #ffffff 100%);
-      border-top: 1px solid var(--line);
-    }
-    .footer-neo .ft-title{
-      font-weight:800; letter-spacing:.3px; color:var(--ink);
-      background:linear-gradient(135deg,var(--brand1),var(--brand2));
-      -webkit-background-clip:text; background-clip:text; color:transparent;
-    }
-    .footer-neo .ft-list{ list-style:none; padding:0; margin:0; }
-    .footer-neo .ft-list li{ margin:.4rem 0; }
-    .footer-neo .ft-list a{
-      text-decoration:none;
-      color:var(--muted);
-      transition: color .15s ease, border-color .15s ease;
-      border-bottom:1px solid transparent;
-    }
-    .footer-neo .ft-list a:hover{
-      color:var(--ink);
-      border-color:var(--line);
-    }
-    .footer-neo .ft-social{
-      width:36px; height:36px; border-radius:999px;
-      display:inline-flex; align-items:center; justify-content:center;
-      border:1px solid var(--line); color:#55607a; text-decoration:none;
-      transition:transform .15s ease, background .15s ease, color .15s ease;
-    }
-    .footer-neo .ft-social:hover{
-      transform:translateY(-2px);
-      background:#f2efff;
-      color:#3b2fe0;
-    }
-    .footer-neo .ft-legal{
-      border-top:1px dashed var(--line);
-      padding:14px 0;
-      background:#fff;
-    }
-    .footer-neo .ft-legal-link{
-      color:#8a90a3; text-decoration:none; font-size:.95rem;
-    }
-    .footer-neo .ft-legal-link:hover{ color:#4a5166; text-decoration:underline; }
   </style>
+
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const container = document.getElementById('flash-container');
@@ -175,7 +127,6 @@
           requestAnimationFrame(()=>bar.style.transform='scaleX(0)');};
         const pause=()=>{if(!timerId)return;clearTimeout(timerId);timerId=null;lastHoverStart=Date.now();bar.style.transition='none';};
         const resume=()=>{if(timerId)return;if(lastHoverStart)remaining-=(Date.now()-lastHoverStart);if(remaining<300)remaining=300;
-          const w=prog.getBoundingClientRect().width;const bw=bar.getBoundingClientRect().width||w;
           bar.style.transition=`transform ${remaining}ms linear`;
           requestAnimationFrame(()=>bar.style.transform='scaleX(0)');
           timerId=setTimeout(()=>alertInst.close(),remaining);};
@@ -188,12 +139,29 @@
   {% endif %}
   {% endwith %}
 
-  <!-- ✅ 主要內容（撐開中間區域） -->
-  <main class="flex-fill">
-    {% block content %}{% endblock %}
+  <!-- ✅ 主要內容：flex-fill 才能把 footer 推到底 -->
+  <main class="flex-fill app-main-wrap">
+  <div class="site-shell">
+    <div class="site-grid">
+
+      <!-- 左側選單 -->
+      <aside class="site-aside">
+        {% include "_sidebar.html" %}
+      </aside>
+
+      <!-- 右側主內容 -->
+      <section class="site-main">
+        <div class="site-main-card">
+          {% block content %}{% endblock %}
+        </div>
+      </section>
+
+    </div>
+  </div>
   </main>
 
-  <!-- ✅ Footer 區塊（預設包含，可在子頁覆寫為空來隱藏或自訂） -->
+
+  <!-- ✅ Footer：放在 app-shell 外面，才會全寬、不受 sidebar 影響 -->
   {% block footer %}
     {% include "_footer.html" %}
   {% endblock %}
