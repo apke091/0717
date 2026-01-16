@@ -3,6 +3,9 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
+  <!-- ✅ 手機一定要有這行，media query 才會生效 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
   <title>{% block title %}我的網站{% endblock %}</title>
 
   <!-- Bootstrap CSS -->
@@ -15,7 +18,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
   <!-- 統一全站寬度覆蓋（放最後） -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=20251021">
+  <!-- ✅ 改版本號，手機才不會吃舊快取 -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/site.css') }}?v=20260116">
 
   <style>
     body{
@@ -141,25 +145,24 @@
 
   <!-- ✅ 主要內容：flex-fill 才能把 footer 推到底 -->
   <main class="flex-fill app-main-wrap">
-  <div class="site-shell">
-    <div class="site-grid">
+    <div class="site-shell">
+      <div class="site-grid">
 
-      <!-- 左側選單 -->
-      <aside class="site-aside">
-        {% include "_sidebar.html" %}
-      </aside>
+        <!-- 左側選單 -->
+        <aside class="site-aside">
+          {% include "_sidebar.html" %}
+        </aside>
 
-      <!-- 右側主內容 -->
-      <section class="site-main">
-        <div class="site-main-card">
-          {% block content %}{% endblock %}
-        </div>
-      </section>
+        <!-- 右側主內容 -->
+        <section class="site-main">
+          <div class="site-main-card">
+            {% block content %}{% endblock %}
+          </div>
+        </section>
 
+      </div>
     </div>
-  </div>
   </main>
-
 
   <!-- ✅ Footer：放在 app-shell 外面，才會全寬、不受 sidebar 影響 -->
   {% block footer %}
