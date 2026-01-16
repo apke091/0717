@@ -642,3 +642,31 @@ input[type="reset"]:hover{
 .no-footer-first-fold main{
   min-height: 100vh !important;
 }
+
+/* ==========================================================
+   ✅ 手機版：不要縮小/不要水平捲動，改成正常單欄（不用放大看）
+========================================================== */
+@media (max-width: 768px){
+
+  /* 手機不要水平捲動 */
+  .app-main-wrap{
+    overflow-x: hidden !important;
+  }
+
+  /* 解除桌機的最小寬度，改成單欄 */
+  .site-grid{
+    min-width: 0 !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 側欄不要 sticky，放到上面一塊即可 */
+  .site-aside{
+    position: static !important;
+    top: auto !important;
+  }
+
+  /* 側欄卡片高度正常 */
+  .app-sidebar .sidebar-inner{
+    overflow: visible !important;
+  }
+}
