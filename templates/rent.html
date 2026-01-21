@@ -32,98 +32,97 @@
   .flatpickr-calendar { border-radius:14px; box-shadow:0 16px 40px rgba(90,80,200,.18); }
 </style>
 
-<div class="container-fluid" style="margin-top:90px;">
-  <div class="row justify-content-center">
-    <div class="col-12 col-xl-10">
-      <div class="card rent-card">
-        <div class="rent-header">
-          <h2 class="rent-title mb-1">線上申請租借</h2>
-          <div class="hint">選擇教室、日期與時間。</div>
-        </div>
-
-        <div class="card-body p-4 p-md-5">
-          <form id="rentForm" novalidate method="POST" action="{{ url_for('rent') }}">
-            <!-- 教室 -->
-            <div class="mb-3">
-              <label class="form-label" for="location">教室</label>
-              <select class="form-select" id="location" name="location" required>
-                <option value="" selected disabled>請選擇教室</option>
-                <option>府前教室</option>
-                <option>西門教室</option>
-              </select>
-            </div>
-
-            <!-- 日期（年/月/日選單） -->
-            <div class="mb-2">
-              <label class="form-label">租借日期</label>
-              <div class="d-flex gap-2">
-                <select id="yyyy" class="form-select" style="max-width:130px;"></select>
-                <select id="mm"   class="form-select" style="max-width:110px;"></select>
-                <select id="dd"   class="form-select" style="max-width:110px;"></select>
-              </div>
-              <div class="hint mt-1">僅可選擇今天（含）以後的日期。</div>
-              <input type="hidden" id="date" name="date" required>
-            </div>
-
-            <!-- 時間（Flatpickr，允許手打） -->
-            <div class="mb-3">
-              <label class="form-label">租借時間</label>
-              <div class="row g-2">
-                <div class="col-6">
-                  <input type="text" name="start_time" class="form-control js-time"
-                         placeholder="開始（如 09:00）" required>
-                </div>
-                <div class="col-6">
-                  <input type="text" name="end_time" class="form-control js-time"
-                         placeholder="結束（如 12:00）" required>
-                </div>
-              </div>
-              <div class="hint">開放 09:00–21:30；結束需晚於開始。</div>
-            </div>
-
-            <!-- 申請人 -->
-            <div class="mb-3">
-              <label class="form-label">申請人</label>
-              <input id="name" name="name" class="form-control" placeholder="請輸入您的名字" required>
-              <div class="invalid-feedback">請輸入申請人姓名</div>
-            </div>
-
-            <!-- 電話 -->
-            <div class="mb-3">
-              <label class="form-label">電話</label>
-              <input id="phone" name="phone" class="form-control"
-                     placeholder="09xx-xxx-xxx" required inputmode="tel"
-                     pattern="^09\\d{2}-?\\d{3}-?\\d{3}$" maxlength="12">
-              <div class="form-text">僅接受台灣手機：09xx-xxx-xxx（可不輸入連字號）。</div>
-              <div class="invalid-feedback">請輸入正確的手機號碼（09xx-xxx-xxx）</div>
-            </div>
-
-            <!-- Email -->
-            <div class="mb-3 position-relative">
-              <label class="form-label">Email</label>
-              <input id="email" name="email" type="email" class="form-control"
-                     placeholder="name@example.com" required inputmode="email"
-                     pattern="^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$">
-              <div class="invalid-feedback">請輸入正確的 Email</div>
-              <ul id="email-suggestions"
-                  class="list-group position-absolute w-100 shadow-sm"
-                  style="z-index:1060; top:100%; left:0; display:none;">
-              </ul>
-            </div>
-
-            <!-- 備註 -->
-            <div class="mb-4">
-              <label class="form-label">備註（選填）</label>
-              <textarea name="note" rows="3" class="form-control" placeholder="有其他需求可在此說明"></textarea>
-            </div>
-
-            <div class="d-grid">
-              <button id="submitBtn" class="btn btn-primary" type="submit">送出申請</button>
-            </div>
-          </form>
-        </div>
+{# ✅ 改動：拿掉 margin-top:90px（因為全站已經有預留 navbar 高度） #}
+{# ✅ 改動：不要再包 container-fluid/row/col，避免多餘留白與版型打架 #}
+<div class="d-flex justify-content-center">
+  <div class="w-100" style="max-width:980px;">
+    <div class="card rent-card">
+      <div class="rent-header">
+        <h2 class="rent-title mb-1">線上申請租借</h2>
+        <div class="hint">選擇教室、日期與時間。</div>
       </div>
 
+      <div class="card-body p-4 p-md-5">
+        <form id="rentForm" novalidate method="POST" action="{{ url_for('rent') }}">
+          <!-- 教室 -->
+          <div class="mb-3">
+            <label class="form-label" for="location">教室</label>
+            <select class="form-select" id="location" name="location" required>
+              <option value="" selected disabled>請選擇教室</option>
+              <option>府前教室</option>
+              <option>西門教室</option>
+            </select>
+          </div>
+
+          <!-- 日期（年/月/日選單） -->
+          <div class="mb-2">
+            <label class="form-label">租借日期</label>
+            <div class="d-flex gap-2">
+              <select id="yyyy" class="form-select" style="max-width:130px;"></select>
+              <select id="mm"   class="form-select" style="max-width:110px;"></select>
+              <select id="dd"   class="form-select" style="max-width:110px;"></select>
+            </div>
+            <div class="hint mt-1">僅可選擇今天（含）以後的日期。</div>
+            <input type="hidden" id="date" name="date" required>
+          </div>
+
+          <!-- 時間（Flatpickr，允許手打） -->
+          <div class="mb-3">
+            <label class="form-label">租借時間</label>
+            <div class="row g-2">
+              <div class="col-6">
+                <input type="text" name="start_time" class="form-control js-time"
+                       placeholder="開始（如 09:00）" required>
+              </div>
+              <div class="col-6">
+                <input type="text" name="end_time" class="form-control js-time"
+                       placeholder="結束（如 12:00）" required>
+              </div>
+            </div>
+            <div class="hint">開放 09:00–21:30；結束需晚於開始。</div>
+          </div>
+
+          <!-- 申請人 -->
+          <div class="mb-3">
+            <label class="form-label">申請人</label>
+            <input id="name" name="name" class="form-control" placeholder="請輸入您的名字" required>
+            <div class="invalid-feedback">請輸入申請人姓名</div>
+          </div>
+
+          <!-- 電話 -->
+          <div class="mb-3">
+            <label class="form-label">電話</label>
+            <input id="phone" name="phone" class="form-control"
+                   placeholder="09xx-xxx-xxx" required inputmode="tel"
+                   pattern="^09\\d{2}-?\\d{3}-?\\d{3}$" maxlength="12">
+            <div class="form-text">僅接受台灣手機：09xx-xxx-xxx（可不輸入連字號）。</div>
+            <div class="invalid-feedback">請輸入正確的手機號碼（09xx-xxx-xxx）</div>
+          </div>
+
+          <!-- Email -->
+          <div class="mb-3 position-relative">
+            <label class="form-label">Email</label>
+            <input id="email" name="email" type="email" class="form-control"
+                   placeholder="name@example.com" required inputmode="email"
+                   pattern="^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$">
+            <div class="invalid-feedback">請輸入正確的 Email</div>
+            <ul id="email-suggestions"
+                class="list-group position-absolute w-100 shadow-sm"
+                style="z-index:1060; top:100%; left:0; display:none;">
+            </ul>
+          </div>
+
+          <!-- 備註 -->
+          <div class="mb-4">
+            <label class="form-label">備註（選填）</label>
+            <textarea name="note" rows="3" class="form-control" placeholder="有其他需求可在此說明"></textarea>
+          </div>
+
+          <div class="d-grid">
+            <button id="submitBtn" class="btn btn-primary" type="submit">送出申請</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </div>
@@ -350,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
     e.setCustomValidity(ev!=null && ev>=OPEN && ev<=CLOSE && (sv==null || ev>=sv+STEP) ? '' : '結束時間需 ≥ 開始+15 分，且在 09:00–21:30');
   }
 
-  // 分鐘兩位就自動貼齊（例如輸入 09:5「0」時立即對齊）
+  // 分鐘兩位就自動貼齊
   function autoSnapIfMinuteDone(el){
     const m = String(el.value||'').match(/^(\d{1,2}):(\d{2})$/);
     if (!m) return;
@@ -368,10 +367,10 @@ document.addEventListener('DOMContentLoaded', () => {
   normalize();
 
   // 送出前最後把關
-  form.addEventListener('submit', (e)=>{
+  form.addEventListener('submit', (ev)=>{
     normalize({fixEnd:true, snapToStep:true});
     if(!s.checkValidity() || !e.checkValidity()){
-      e.preventDefault(); e.stopPropagation();
+      ev.preventDefault(); ev.stopPropagation();
     }
   });
 });

@@ -1,10 +1,14 @@
 /* ==========================================================
-   site.css（整理版，可直接整份貼上）
+   site.css（整理版｜可整份直接貼上）
    目標：
    1) 全站版心 1180px
-   2) 版面：左側選單 + 右側內容（像你示意圖）
-   3) 分割畫面：維持兩欄，寬度不夠就水平捲動（左右滑）
+   2) 左側選單 + 右側內容（桌機兩欄）
+   3) 桌機寬度不夠 → 整頁可左右滑
+   4) 手機 → 自動改單欄，不左右滑
+   5) ✅ 右側主內容卡片：霧面玻璃感（方案 B）
+   6) ✅ 側欄不要卡片內捲動（避免捲軸又出現）
 ========================================================== */
+
 
 /* =========================
    全站寬度 / 變數
@@ -20,8 +24,7 @@
   --btn-sat-hover: .94;
   --btn-sat-active: .82;
 
-  /* ✅ navbar fixed-top 高度（側欄 sticky 用）
-     如果你的 navbar 不是 fixed-top，想消掉上方留白可改成 0px */
+  /* ✅ navbar fixed-top 高度（側欄 sticky / 內容上方預留） */
   --topbar-h: 56px;
 
   /* ✅ Layout */
@@ -56,6 +59,7 @@ body{
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
 
 /* =========================
    通用：表單/排版
@@ -93,7 +97,7 @@ button:not(.btn):focus-visible{
 
 video{ display:block; margin-bottom:10px; }
 
-/* 新建卡片外觀（用再加 <div class="card-wrap">） */
+/* 新建卡片外觀（需要時才加 <div class="card-wrap">） */
 .card-wrap{
   background:#fff;
   padding:30px;
@@ -101,6 +105,7 @@ video{ display:block; margin-bottom:10px; }
   box-shadow:0 0 8px rgba(0,0,0,0.08);
   margin:30px 0;
 }
+
 
 /* =========================
    購物車數量徽章
@@ -153,6 +158,7 @@ a.nav-link .cart-badge.ring-purple{
     0 8px 18px rgba(2,6,23,.10),
     inset 0 1px 0 rgba(255,255,255,.9);
 }
+
 
 /* =========================
    Hero arrows — 玻璃感白箭頭
@@ -236,6 +242,7 @@ a.nav-link .cart-badge.ring-purple{
   border-radius:12px;
 }
 
+
 /* =========================
    Footer 深色版
 ========================= */
@@ -305,11 +312,6 @@ a.nav-link .cart-badge.ring-purple{
   .footer-neo.footer-dark .ft-list li{ margin:.38rem 0; }
 }
 
-/* 需要使用時把 footer 推到首屏之外（你若不想推，改 0 或移除） */
-.no-footer-first-fold main{
-  min-height: calc(100vh + 180px);
-}
-
 /* =========================
    動畫可及性：減少動效
 ========================= */
@@ -322,31 +324,23 @@ a.nav-link .cart-badge.ring-purple{
   }
 }
 
+
 /* =========================
    ✅ 按鈕飽和度降低
 ========================= */
-.btn:not(.btn-link):not(.btn-close){
-  filter: saturate(var(--btn-sat));
-}
-.btn:not(.btn-link):not(.btn-close):hover{
-  filter: saturate(var(--btn-sat-hover));
-}
-.btn:not(.btn-link):not(.btn-close):active{
-  filter: saturate(var(--btn-sat-active));
-}
+.btn:not(.btn-link):not(.btn-close){ filter: saturate(var(--btn-sat)); }
+.btn:not(.btn-link):not(.btn-close):hover{ filter: saturate(var(--btn-sat-hover)); }
+.btn:not(.btn-link):not(.btn-close):active{ filter: saturate(var(--btn-sat-active)); }
 
 button:not(.btn),
 input[type="submit"],
 input[type="button"],
-input[type="reset"]{
-  filter: saturate(var(--btn-sat));
-}
+input[type="reset"]{ filter: saturate(var(--btn-sat)); }
+
 button:not(.btn):hover,
 input[type="submit"]:hover,
 input[type="button"]:hover,
-input[type="reset"]:hover{
-  filter: saturate(var(--btn-sat-hover));
-}
+input[type="reset"]:hover{ filter: saturate(var(--btn-sat-hover)); }
 
 /* 降低紫色飽和度：btn-primary */
 .btn-primary{
@@ -359,15 +353,13 @@ input[type="reset"]:hover{
   --bs-btn-focus-shadow-rgb: 120,105,214;
 }
 
-/* ==========================================================
-   ✅ Layout：示意圖版（左選單 + 右內容）
-   分割畫面維持兩欄：用水平捲動
-========================================================== */
 
-/* 如果 navbar 是 fixed-top，需要預留高度；不是 fixed-top 就把 --topbar-h 設 0 */
+/* ==========================================================
+   ✅ Layout：左選單 + 右內容（桌機兩欄；寬度不夠就左右滑）
+========================================================== */
 .app-main-wrap{
   padding-top: var(--topbar-h);
-  overflow-x: auto;                 /* ✅ 寬度不足 → 左右滑 */
+  overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -377,33 +369,14 @@ input[type="reset"]:hover{
   padding: var(--shell-pad);
 }
 
-/* ✅ 兩欄：固定最小總寬，小於就水平捲動 */
 .site-grid{
   display: grid;
   grid-template-columns: var(--aside-w) minmax(0, 1fr);
   gap: var(--gap);
   align-items: start;
-
-  min-width: var(--grid-min);       /* ✅ 讓分割畫面維持兩欄 */
+  min-width: var(--grid-min);
 }
 
-/* 左側 sticky 容器 */
-.site-aside{
-  position: sticky;
-  top: calc(var(--topbar-h) + 16px);
-  height: calc(100vh - var(--topbar-h) - 32px);
-}
-
-/* 右側大白卡 */
-.site-main-card{
-  background: rgba(255,255,255,.92);
-  border-radius: var(--card-radius);
-  box-shadow: var(--card-shadow);
-  border: 1px solid rgba(238,240,247,.9);
-  padding: 18px;
-}
-
-/* 右側內容不要撐爆 */
 .site-main,
 .site-main-card{
   min-width: 0;
@@ -415,26 +388,60 @@ input[type="reset"]:hover{
   max-width: var(--page-max);
 }
 
-/* ==========================================================
-   ✅ Sidebar（沿用你原 class：app-sidebar）
-   改成示意圖「白卡 + 標題條 + 列表分隔線」
-========================================================== */
-.app-sidebar{ width: 100%; height: 100%; }
+
+/* =========================
+   ✅ 右側主內容卡片：霧面玻璃（方案 B）
+========================= */
+.site-main-card{
+  background: rgba(255,255,255,.55) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.45) !important;
+  border-radius: var(--card-radius);
+  box-shadow: 0 10px 26px rgba(83,70,186,.08) !important;
+  padding: 18px;
+}
+.site-main-card > :first-child{ margin-top: 0 !important; }
+
+/* ✅ 內層 frosted-bg：清掉白底（避免內容又白到底） */
+.site-main-card .frosted-bg,
+.frosted-bg{
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+
+/* =========================
+   ✅ 左側 sticky（但不要卡片內捲動）
+========================= */
+.site-aside{
+  position: sticky;
+  top: calc(var(--topbar-h) + 16px);
+}
+
+.app-sidebar{ width: 100%; }
 .app-sidebar ul{ list-style:none; padding:0; margin:0; }
 .app-sidebar a{ text-decoration:none !important; }
 
-/* 外框：白卡 */
+/* ✅ 關鍵：不再限制 max-height、不再 overflow:auto → 不會出現內捲軸 */
 .app-sidebar .sidebar-inner{
-  height:100%;
-  overflow:auto;
   border-radius: 16px;
-  padding: 0;                       /* 讓標題貼齊 */
-  background: rgba(255,255,255,.92);
-  border: 1px solid rgba(238,240,247,.95);
+  padding: 0;
+  background: rgba(255,255,255,.62);
+  border: 1px solid rgba(255,255,255,.45);
   box-shadow: var(--card-shadow);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  max-height: none !important;
+  overflow: visible !important;
 }
 
-/* MENU 標題條 */
+
+/* =========================
+   ✅ Sidebar 樣式（沿用 app-sidebar）
+========================= */
 .app-sidebar .sidebar-title{
   margin: 0;
   padding: 12px 14px;
@@ -445,7 +452,6 @@ input[type="reset"]:hover{
   background: linear-gradient(135deg, rgba(131,93,255,.22), rgba(255,255,255,0));
 }
 
-/* 清單：改成列表列 */
 .app-sidebar .sidebar-list{
   display:flex;
   flex-direction:column;
@@ -453,7 +459,6 @@ input[type="reset"]:hover{
   padding: 6px 0;
 }
 
-/* 主連結：列表列樣式 */
 .app-sidebar .slink{
   position: relative;
   width: 100%;
@@ -475,13 +480,8 @@ input[type="reset"]:hover{
 
   transition: background .14s ease;
 }
+.app-sidebar .slink + .slink{ border-top: 1px solid rgba(238,240,247,.9); }
 
-/* 分隔線 */
-.app-sidebar .slink + .slink{
-  border-top: 1px solid rgba(238,240,247,.9);
-}
-
-/* icon */
 .app-sidebar .slink i{
   width: 20px;
   font-size: 1.05rem;
@@ -490,15 +490,11 @@ input[type="reset"]:hover{
   justify-content:center;
   color:#2c2f45 !important;
 }
-
-/* 文字 */
 .app-sidebar .slink span{
   font-weight: 800;
   letter-spacing: .2px;
   color:#2c2f45 !important;
 }
-
-/* 右側箭頭 */
 .app-sidebar .slink::after{
   content: "›";
   margin-left: auto;
@@ -508,21 +504,15 @@ input[type="reset"]:hover{
   transform: translateY(-1px);
   color:#2c2f45;
 }
+.app-sidebar .slink:hover{ background: #f7f7ff; }
 
-/* hover */
-.app-sidebar .slink:hover{
-  background: #f7f7ff;
-}
-
-/* active：左側紫條 + 淡底 */
 .app-sidebar .slink.active{
   background: rgba(124,58,237,.08);
   border-left: 4px solid rgba(124,58,237,.55);
-  padding-left: 10px; /* 扣掉左邊 4px */
+  padding-left: 10px;
 }
 .app-sidebar .slink.active::after{ opacity: .45; }
 
-/* 分隔/標題（保留你原本結構用） */
 .app-sidebar .sidebar-hr{
   height:1px;
   background: rgba(44,47,69,.14);
@@ -535,7 +525,28 @@ input[type="reset"]:hover{
   padding: 0 8px 4px;
 }
 
-/* collapse 那列：不要右側 ›，用你原本箭頭 */
+/* ===== 修正：Sidebar 每一列高度完全一致 ===== */
+
+/* 1) 每列固定基準高度，避免內容差一點就變矮/變高 */
+.app-sidebar .slink{
+  box-sizing: border-box;
+  min-height: 46px;
+  line-height: 1;
+}
+
+/* 2) 分隔線不要用 border-top（會改變高度），改用 inset shadow */
+.app-sidebar .slink + .slink{
+  border-top: 0 !important;
+  box-shadow: inset 0 1px 0 rgba(238,240,247,.9);
+}
+
+/* 3) 讓「綜合管理」右邊的 ▶ 跟一般列的 › 一樣大，避免那列變矮 */
+.app-sidebar .arrow{
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+/* collapse 那列：不要右側 › */
 .app-sidebar .slink-collapse{ justify-content: space-between; }
 .app-sidebar .slink-collapse::after{ display:none; }
 .app-sidebar .arrow{
@@ -548,16 +559,18 @@ input[type="reset"]:hover{
   opacity: .65;
 }
 
-/* 子連結：保持簡潔 */
 .app-sidebar .sublink{
   display:block;
   margin: 6px 14px;
   padding: 10px 12px;
   border-radius: 12px;
 
-  background: rgba(255,255,255,.70);
-  border: 1px solid rgba(238,240,247,.95);
+  background: rgba(255,255,255,.55);
+  border: 1px solid rgba(255,255,255,.45);
   box-shadow: 0 8px 18px rgba(83,70,186,.08);
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 
   color: rgba(44,47,69,.92) !important;
   -webkit-text-fill-color: rgba(44,47,69,.92) !important;
@@ -567,7 +580,7 @@ input[type="reset"]:hover{
   transition: background .14s ease, box-shadow .14s ease;
 }
 .app-sidebar .sublink:hover{
-  background: rgba(255,255,255,.92);
+  background: rgba(255,255,255,.70);
   box-shadow: 0 12px 22px rgba(83,70,186,.12);
 }
 .app-sidebar .sublink.active{
@@ -575,98 +588,288 @@ input[type="reset"]:hover{
   border-color: rgba(124,58,237,.18);
 }
 
-/* 分割畫面常見：左欄縮窄 */
+
+/* =========================
+   分割畫面常見：左欄縮窄
+========================= */
 @media (max-width: 992px){
   :root{ --aside-w: var(--aside-w-sm); }
-  .site-grid{
-    grid-template-columns: var(--aside-w) minmax(0, 1fr);
-  }
 }
+
 
 /* ==========================================================
-   ✅ 不要在格子內滑動：內容不夠就用整頁上下捲
-   ✅ 內容太多時：左欄才會自己出現捲動（不會一直有捲軸）
-========================================================== */
-
-/* 1) 左欄不要固定高度（讓整頁捲動） */
-.site-aside{
-  height: auto !important;
-}
-.site-aside .app-sidebar{
-  height: auto !important;
-}
-
-/* 2) 側欄內容：平常不出現內部捲動；真的太長才出現 */
-.app-sidebar .sidebar-inner{
-  height: auto !important;
-  max-height: calc(100vh - var(--topbar-h) - 32px);
-  overflow: auto; /* 內容超過 max-height 才會出現捲動條 */
-}
-
-/* 3) 取消「硬把 footer 推到首屏外」造成的大空白（黑色區塊上方空一大塊） */
-.no-footer-first-fold main{
-  min-height: 100vh !important; /* 或者你也可以直接把那段規則刪掉 */
-}
-
-/* ==========================================================
-   ✅ 左右欄「自然延伸」：誰長就往下長，整頁捲動
-========================================================== */
-
-/* 1) 左欄不要固定高度（解除同高/解除卡住） */
-.site-aside{
-  height: auto !important;
-  position: sticky; /* 你要它黏住就留著，不要黏住就改成 static */
-  top: calc(var(--topbar-h) + 16px);
-}
-
-/* 2) sidebar 本體也不要硬撐高 */
-.site-aside .app-sidebar{
-  height: auto !important;
-}
-
-/* 3) 側欄內容不要在卡片內捲動（改用整頁捲動） */
-.app-sidebar .sidebar-inner{
-  height: auto !important;
-  max-height: none !important;
-  overflow: visible !important;
-}
-
-/* 4) 右欄也允許自然變長（保險） */
-.site-main,
-.site-main-card{
-  height: auto !important;
-  min-height: 0 !important;
-}
-
-/* 5) 取消「硬把 footer 推到首屏外」造成大空白（保險） */
-.no-footer-first-fold main{
-  min-height: 100vh !important;
-}
-
-/* ==========================================================
-   ✅ 手機版：不要縮小/不要水平捲動，改成正常單欄（不用放大看）
+   ✅ 手機版：單欄、不左右滑
 ========================================================== */
 @media (max-width: 768px){
+  .app-main-wrap{ overflow-x: hidden !important; }
 
-  /* 手機不要水平捲動 */
-  .app-main-wrap{
-    overflow-x: hidden !important;
-  }
-
-  /* 解除桌機的最小寬度，改成單欄 */
   .site-grid{
     min-width: 0 !important;
     grid-template-columns: 1fr !important;
   }
 
-  /* 側欄不要 sticky，放到上面一塊即可 */
   .site-aside{
     position: static !important;
     top: auto !important;
   }
 
-  /* 側欄卡片高度正常 */
-  .app-sidebar .sidebar-inner{
-    overflow: visible !important;
+  .site-main-card{ padding: 14px !important; }
+}
+
+/* ✅ 全站：footer 不要出現在首屏，必須往下滑才看到 */
+:root{
+  --footer-below-fold: 300px;   /* footer 往下推多少（可調 160~320） */
+  --content-footer-gap: 28px;   /* 內容與 footer 的距離（可調 20~48） */
+}
+
+/* 內容到底要留一點距離 */
+main.app-main-wrap{
+  padding-bottom: var(--content-footer-gap) !important;
+}
+
+/* 這段才是關鍵：用假底部把 footer 推到首屏下方 */
+main.app-main-wrap::after{
+  content: "";
+  display: block;
+  height: var(--footer-below-fold);
+}
+
+/* 手機不用推那麼多 */
+@media (max-width: 768px){
+  :root{ --footer-below-fold: 140px; }
+}
+
+/* =========================
+   ✅ Sidebar menu 高度強制統一（最終修正）
+========================= */
+
+/* 每一列固定高度，避免 icon glyph 導致每列差 1~2px */
+.app-sidebar .sidebar-list > li > a.slink,
+.app-sidebar a.slink.slink-collapse{
+  height: 48px;              /* 你想更高可改 50/52 */
+  padding: 0 14px;           /* 由 height 決定上下，不再用 padding-top/bottom */
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  line-height: 1;            /* 鎖死行高 */
+}
+
+/* icon 也鎖死高度與行高（Bootstrap Icons 是 ::before，很常是兇手） */
+.app-sidebar .slink i{
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.app-sidebar .slink i::before{
+  line-height: 1;
+}
+
+/* 文字不要換行，避免某些情況寬度不足就變高 */
+.app-sidebar .slink span{
+  white-space: nowrap;
+  line-height: 1.1;
+}
+
+/* 綜合管理右邊箭頭大小一致 */
+.app-sidebar .slink-collapse .arrow{
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+/* ==========================================================
+   ✅ Sidebar hover 提醒特效（放 site.css 最底部）
+   目標：滑過去微亮 + 左側提示條 + 微位移 + 陰影 + 箭頭更明顯
+   不破壞你已鎖死的 height:48px
+========================================================== */
+
+:root{
+  --sb-accent: rgba(124,58,237,.75);       /* 紫色提示條 */
+  --sb-hover-bg: rgba(124,58,237,.07);     /* hover 背景 */
+  --sb-hover-shadow: 0 10px 22px rgba(83,70,186,.10);
+}
+
+/* 你已鎖死高度，這裡只加效果，不改 height/padding */
+.app-sidebar .slink{
+  position: relative;
+  transition: background .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+
+/* 左側提示條：用 pseudo element，比 border-left 穩（不會改高度/排版） */
+.app-sidebar .slink::before{
+  content:"";
+  position:absolute;
+  left: 0;
+  top: 9px;
+  bottom: 9px;
+  width: 4px;
+  border-radius: 4px;
+  background: transparent;
+  opacity: 0;
+  transform: scaleY(.75);
+  transition: opacity .18s ease, transform .18s ease, background .18s ease;
+}
+
+/* 右側箭頭（你目前用 ::after "›"）做變化 */
+.app-sidebar .slink::after{
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+/* Hover 效果 */
+.app-sidebar .slink:hover{
+  background: var(--sb-hover-bg) !important;
+  transform: translateX(2px);
+  box-shadow: var(--sb-hover-shadow);
+}
+.app-sidebar .slink:hover::before{
+  background: var(--sb-accent);
+  opacity: 1;
+  transform: scaleY(1);
+}
+.app-sidebar .slink:hover::after{
+  opacity: .55;
+  transform: translate(2px, -1px);
+}
+
+/* Active（目前頁面）也用 pseudo element 畫左條，避免你原本 border-left 造成位移 */
+.app-sidebar .slink.active{
+  background: rgba(124,58,237,.09) !important;
+  padding-left: 14px !important;   /* ✅ 取消你原本 active 的 padding-left:10px 造成內容位移 */
+  box-shadow: 0 10px 22px rgba(83,70,186,.10);
+}
+.app-sidebar .slink.active::before{
+  background: rgba(124,58,237,.85);
+  opacity: 1;
+  transform: scaleY(1);
+}
+.app-sidebar .slink.active::after{ opacity: .6; }
+
+/* 子選單 sublink 也加一點提醒感（跟你白色膠囊一致） */
+.app-sidebar .sublink{
+  transition: background .18s ease, transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.app-sidebar .sublink:hover{
+  background: rgba(124,58,237,.06);
+  border-color: rgba(124,58,237,.22);
+  transform: translateX(2px);
+  box-shadow: 0 12px 22px rgba(83,70,186,.12);
+}
+
+/* 無障礙：降低動態 */
+@media (prefers-reduced-motion: reduce){
+  .app-sidebar .slink,
+  .app-sidebar .slink::before,
+  .app-sidebar .slink::after,
+  .app-sidebar .sublink{
+    transition: none !important;
+    transform: none !important;
   }
 }
+
+/* ==========================================================
+   ✅ Sidebar hover 提醒特效（無左側小條版本）
+   放 site.css 最底部，覆蓋之前的 ::before 小條
+========================================================== */
+
+:root{
+  --sb-hover-bg: rgba(124,58,237,.07);
+  --sb-active-bg: rgba(124,58,237,.10);
+  --sb-ring: rgba(124,58,237,.18);
+  --sb-shadow: 0 10px 22px rgba(83,70,186,.10);
+}
+
+/* ❶ 完全關掉左側小條（hover/active 都不出現） */
+.app-sidebar .slink::before{ display:none !important; content:none !important; }
+
+/* ❷ Active 也不要左邊 border/padding 位移 */
+.app-sidebar .slink.active{
+  border-left: 0 !important;
+  padding-left: 14px !important;  /* 跟你原本一致，不要被推 */
+}
+
+/* ❸ 用「淡底 + 內框 + 陰影」做提醒感（不靠小條） */
+.app-sidebar .slink{
+  transition: background .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.app-sidebar .slink:hover{
+  background: var(--sb-hover-bg) !important;
+  box-shadow: inset 0 0 0 1px var(--sb-ring), var(--sb-shadow);
+  transform: translateX(1px); /* 你想完全不位移就改成 0 */
+}
+
+/* Active（目前頁） */
+.app-sidebar .slink.active{
+  background: var(--sb-active-bg) !important;
+  box-shadow: inset 0 0 0 1px rgba(124,58,237,.22), 0 10px 22px rgba(83,70,186,.10);
+}
+
+/* 右側箭頭（你用 ::after "›"）：hover/active 更明顯 */
+.app-sidebar .slink::after{
+  transition: opacity .18s ease, transform .18s ease;
+}
+.app-sidebar .slink:hover::after{
+  opacity: .55;
+  transform: translate(2px, -1px);
+}
+.app-sidebar .slink.active::after{ opacity: .6; }
+
+/* 子選單也跟著一致（不加左條） */
+.app-sidebar .sublink:hover{
+  background: rgba(124,58,237,.06);
+  border-color: rgba(124,58,237,.22);
+  box-shadow: inset 0 0 0 1px rgba(124,58,237,.12), 0 12px 22px rgba(83,70,186,.12);
+  transform: translateX(1px);
+}
+
+/* ✅ Sidebar Active 中等提示條（只在 active 出現） */
+
+:root{
+  --sb-hover-bg: rgba(124,58,237,.06);
+  --sb-active-bg: rgba(124,58,237,.10);
+  --sb-shadow: 0 10px 22px rgba(83,70,186,.10);
+  --sb-ring: rgba(124,58,237,.18);
+
+  --sb-bar: rgba(124,58,237,.65); /* 提示條顏色 */
+  --sb-bar-w: 5px;                /* ✅ 提示條寬度：想更細=4px；更明顯=6px */
+}
+
+/* 關掉舊的小條（避免混到） */
+.app-sidebar .slink::before{ display:none !important; content:none !important; }
+
+/* Hover：只有提醒感，不出條 */
+.app-sidebar .slink{
+  transition: background .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.app-sidebar .slink:hover{
+  background: var(--sb-hover-bg) !important;
+  box-shadow: inset 0 0 0 1px var(--sb-ring), var(--sb-shadow);
+  transform: translateX(1px);
+}
+
+/* Active：左側中等提示條（不推擠內容） */
+.app-sidebar .slink.active{
+  background: var(--sb-active-bg) !important;
+  border-left: 0 !important;
+  padding-left: 14px !important;
+  box-shadow:
+    inset var(--sb-bar-w) 0 0 var(--sb-bar),
+    inset 0 0 0 1px rgba(124,58,237,.22),
+    0 10px 22px rgba(83,70,186,.10);
+}
+
+/* 右側箭頭更明顯（你用 ::after "›"） */
+.app-sidebar .slink::after{
+  transition: opacity .18s ease, transform .18s ease;
+}
+.app-sidebar .slink:hover::after{
+  opacity: .55;
+  transform: translate(2px, -1px);
+}
+.app-sidebar .slink.active::after{ opacity: .65; }
+
