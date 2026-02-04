@@ -873,3 +873,14 @@ main.app-main-wrap::after{
 }
 .app-sidebar .slink.active::after{ opacity: .65; }
 
+/* ✅ 縮小「綜合管理」右側灰箭頭 */
+.app-sidebar .arrow{
+  font-size: 1rem !important;      /* 原本 1.25rem，改小 */
+  opacity: .32 !important;
+  transform-origin: center;
+}
+
+.app-sidebar .slink-collapse[aria-expanded="true"] .arrow{
+  opacity: .5 !important;
+  transform: rotate(90deg) scale(.98) !important;
+}

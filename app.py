@@ -108,10 +108,6 @@ def resize_fit_width(img: Image.Image, width: int) -> Image.Image:
     new_h = max(1, int(img.height * ratio))
     return img.resize((width, new_h), Image.LANCZOS)
 
-# 最小版：若你已跑過 init_db，這裡就什麼都不做，避免缺函式報錯
-def ensure_review_tables():
-    return
-
 def ensure_banners_table():
     conn = get_db_connection()
     with conn:
@@ -163,6 +159,15 @@ def get_db_connection():
 UPLOAD_FOLDER_COURSES = os.path.join(BASE_DIR, "uploads", "courses")
 ALLOWED_COURSE_EXTS = {"pdf", "jpg", "jpeg", "png"}
 os.makedirs(UPLOAD_FOLDER_COURSES, exist_ok=True)
+
+def norm_upload_relpath(p: str) -> str:
+    """把路徑統一成相對 uploads 的格式：reviews/..."""
+    p = (p or "").replace("\\", "/").lstrip("/")
+    if p.startswith("uploads/"):
+        p = p[len("uploads/"):]
+    if p.startswith("static/uploads/"):
+        p = p[len("static/uploads/"):]
+    return p
 
 def ensure_courses_table():
     conn = get_db_connection()
@@ -1240,7 +1245,8 @@ def download_course_dm(filename):
 # =========================
 # === 課程回顧（新模組） ===
 # =========================
-UPLOAD_FOLDER_REVIEWS = os.path.join(BASE_DIR, "uploads", "reviews")
+# ✅ reviews 的實體檔案全部存到「UPLOAD_DIR / reviews」
+UPLOAD_FOLDER_REVIEWS = str((UPLOAD_DIR / "reviews").resolve())
 os.makedirs(UPLOAD_FOLDER_REVIEWS, exist_ok=True)
 
 def slugify(name: str) -> str:
@@ -1249,9 +1255,11 @@ def slugify(name: str) -> str:
     return s.lower()
 
 def ensure_review_tables():
+    """建立/補齊 課程回顧三張表 + review_media 新欄位/索引（可重複執行）。"""
     conn = get_db_connection()
     with conn:
         with conn.cursor() as cur:
+            # 分類表
             cur.execute("""
             CREATE TABLE IF NOT EXISTS review_categories (
               id SERIAL PRIMARY KEY,
@@ -1260,6 +1268,8 @@ def ensure_review_tables():
               sort_order INTEGER DEFAULT 0
             );
             """)
+
+            # 主文表
             cur.execute("""
             CREATE TABLE IF NOT EXISTS course_reviews (
               id SERIAL PRIMARY KEY,
@@ -1273,6 +1283,8 @@ def ensure_review_tables():
               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             """)
+
+            # 媒體表（舊版先建立基本欄位）
             cur.execute("""
             CREATE TABLE IF NOT EXISTS review_media (
               id SERIAL PRIMARY KEY,
@@ -1285,20 +1297,67 @@ def ensure_review_tables():
               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
             """)
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_review_media_review ON review_media(review_id);")
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_review_media_sort ON review_media(review_id, sort_order, created_at);")
 
-            # 舊 review_photos → 一次性搬移
-            cur.execute("SELECT to_regclass('public.review_photos') AS t;")
-            has_old = (cur.fetchone() or {}).get("t")
-            if has_old:
-                cur.execute("SELECT COUNT(*) AS ximen FROM review_media;")
-                if (cur.fetchone() or {}).get("ximen", 0) == 0:
-                    cur.execute("""
-                        INSERT INTO review_media (review_id, file_path, file_name, mime, sort_order, created_at)
-                        SELECT review_id, image_path, caption, 'image/*', COALESCE(sort_order,0), NOW()
-                        FROM review_photos;
-                    """)
+            # ✅ 補齊新欄位（縮圖/WEBP 與尺寸）
+            cur.execute("ALTER TABLE review_media ADD COLUMN IF NOT EXISTS width INT;")
+            cur.execute("ALTER TABLE review_media ADD COLUMN IF NOT EXISTS height INT;")
+            cur.execute("ALTER TABLE review_media ADD COLUMN IF NOT EXISTS file_path_480 TEXT;")
+            cur.execute("ALTER TABLE review_media ADD COLUMN IF NOT EXISTS file_path_960 TEXT;")
+            cur.execute("ALTER TABLE review_media ADD COLUMN IF NOT EXISTS file_path_webp TEXT;")
+
+            # 索引
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_review_media_review ON review_media(review_id);")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_review_media_sort ON review_media(review_id, sort_order, created_at, id);")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_course_reviews_category ON course_reviews(category_id);")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_course_reviews_status ON course_reviews(status);")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_course_reviews_date ON course_reviews((COALESCE(event_date, created_at)));")
+
+            # --- 先把 sort_order 去重，避免 UNIQUE INDEX 建不成功 ---
+            cur.execute("""
+            WITH ranked AS (
+              SELECT id,
+                     review_id,
+                     ROW_NUMBER() OVER (
+                       PARTITION BY review_id
+                       ORDER BY COALESCE(sort_order, 0), created_at, id
+                     ) - 1 AS rn
+              FROM review_media
+            )
+            UPDATE review_media m
+            SET sort_order = r.rn
+            FROM ranked r
+            WHERE m.id = r.id AND COALESCE(m.sort_order, -1) <> r.rn;
+            """)
+
+            # ✅ 每篇 sort_order 唯一（可重複執行）
+            cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_review_media_order ON review_media(review_id, sort_order);")
+
+            # 舊表相容：如有 review_photos 且 review_media 為空，搬一次
+            cur.execute("""
+            DO $$
+            BEGIN
+              IF to_regclass('public.review_photos') IS NOT NULL THEN
+                IF NOT EXISTS (SELECT 1 FROM review_media) THEN
+                  INSERT INTO review_media (review_id, file_path, file_name, mime, sort_order, created_at)
+                  SELECT review_id,
+                         image_path,
+                         caption,
+                         'image/*'::text,
+                         COALESCE(sort_order, 0),
+                         NOW()
+                  FROM review_photos;
+                END IF;
+              END IF;
+            END$$;
+            """)
+
+            # 預設塞一個分類（若沒有任何分類）
+            cur.execute("SELECT COUNT(*) AS ximen FROM review_categories;")
+            if (cur.fetchone() or {}).get("ximen", 0) == 0:
+                cur.execute(
+                    "INSERT INTO review_categories (name, slug, sort_order) VALUES (%s,%s,%s);",
+                    ("一般課程", "general", 0)
+                )
     conn.close()
 
 # === Banner（首頁輪播）設定 ===
@@ -1317,19 +1376,34 @@ def gen_banner_filename(original_name: str) -> str:
 # 取用 /uploads 下的檔案（圖片/影片 inline，其餘下載）
 @app.route("/u/<path:relpath>")
 def serve_upload(relpath):
-    uploads_root = (Path(BASE_DIR) / "uploads").resolve()
+    # ✅ 1) 容錯：Windows 反斜線、開頭多餘的 /
+    relpath = (relpath or "").replace("\\", "/").lstrip("/")
+
+    # ✅ 2) 容錯：如果 DB 以前存成 uploads/reviews/xxx.jpg，也能正常找到
+    if relpath.startswith("uploads/"):
+        relpath = relpath[len("uploads/"):]
+    if relpath.startswith("static/uploads/"):
+        relpath = relpath[len("static/uploads/"):]
+
+    uploads_root = UPLOAD_DIR
     target = (uploads_root / relpath).resolve()
+
     # 防止 path traversal
     if not str(target).startswith(str(uploads_root)) or not target.is_file():
         abort(404)
 
     mime = guess_mime(target)
     as_attachment = not (mime.startswith("image/") or mime.startswith("video/"))
-    resp = send_file(target, mimetype=mime, as_attachment=as_attachment,
-                     download_name=target.name, conditional=True)
-    # 圖片/影片可快取，其餘不快取
+    resp = send_file(
+        target,
+        mimetype=mime,
+        as_attachment=as_attachment,
+        download_name=target.name,
+        conditional=True
+    )
     resp.headers["Cache-Control"] = "public, max-age=86400" if not as_attachment else "no-store"
     return resp
+
 
 
 @app.route("/reviews")
@@ -1587,7 +1661,7 @@ def admin_review_delete(rid):
             for f in files:
                 rel = (f or {}).get("file_path")
                 if rel and rel.startswith("reviews/"):
-                    abs_path = os.path.join(BASE_DIR, "uploads", rel.replace("reviews/", f"reviews{os.sep}"))
+                    abs_path = str((UPLOAD_DIR / rel).resolve())
                     if os.path.isfile(abs_path):
                         try: os.remove(abs_path)
                         except: pass
@@ -1704,7 +1778,7 @@ def admin_delete_review_media(rid: int, mid: int):
         cur.execute("DELETE FROM review_media WHERE id=%s", (mid,))
 
     # 刪實體檔（原檔/縮圖/WEBP）
-    uploads_root = (Path(BASE_DIR) / "uploads").resolve()
+    uploads_root = UPLOAD_DIR
     for key in ("file_path", "file_path_480", "file_path_960", "file_path_webp"):
         rel = row.get(key)
         if not rel:

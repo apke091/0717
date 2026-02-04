@@ -1,35 +1,99 @@
+{# templates/review_detail.html #}
 {% extends "base.html" %}
 {% block title %}{{ review.title }}｜課程回顧{% endblock %}
 
 {% block content %}
-<div class="container" style="margin-top:90px; max-width:980px">
+<div id="reviewDetailPage" class="container" style="margin-top:90px; max-width:980px">
 
-  <!-- 返回與標題列 -->
+  <style>
+    /* ===== 本頁按鈕統一（避免 Bootstrap primary 藍）===== */
+    #reviewDetailPage .rb-btn{
+      border:1px solid rgba(131,93,255,.28);
+      background: rgba(131,93,255,.08);
+      color:#3f2f98;
+      border-radius: 999px;
+      font-weight: 800;
+      padding: .38rem .75rem;
+      display:inline-flex;
+      align-items:center;
+      gap:.4rem;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+      text-decoration:none;
+      white-space:nowrap;
+    }
+    #reviewDetailPage .rb-btn:hover{
+      background: rgba(131,93,255,.14);
+      border-color: rgba(131,93,255,.38);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px rgba(83,70,186,.12);
+      color:#35268a;
+    }
+    #reviewDetailPage .rb-btn:active{ transform: translateY(0) scale(.98); }
+    #reviewDetailPage .rb-btn i{ font-size: 1.05rem; }
+
+    #reviewDetailPage .rb-btn-ghost{
+      border:1px solid rgba(0,0,0,.10);
+      background: rgba(255,255,255,.75);
+      color:#40485c;
+      border-radius: 999px;
+      font-weight: 800;
+      padding: .38rem .75rem;
+      display:inline-flex;
+      align-items:center;
+      gap:.4rem;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+      text-decoration:none;
+      white-space:nowrap;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+    #reviewDetailPage .rb-btn-ghost:hover{
+      background: rgba(255,255,255,.92);
+      border-color: rgba(0,0,0,.14);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px rgba(0,0,0,.08);
+      color:#2f3647;
+    }
+    #reviewDetailPage .rb-btn-ghost:active{ transform: translateY(0) scale(.98); }
+
+    /* badge-soft 若你站內有就沿用，沒有就補一個 */
+    #reviewDetailPage .badge-soft{
+      display:inline-flex;
+      align-items:center;
+      gap:.35rem;
+      padding:.35rem .7rem;
+      border-radius:999px;
+      font-weight:800;
+      color:#2b2f43;
+      background: rgba(255,255,255,.70);
+      border: 1px solid rgba(255,255,255,.60);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+  </style>
+
   <div class="d-flex align-items-center justify-content-between mb-3">
-    <a class="btn btn-outline-secondary btn-sm btn-icon" href="{{ url_for('reviews') }}">
-        <i class="bi bi-arrow-left"></i> 回列表
+    <a class="rb-btn-ghost" href="{{ url_for('reviews') }}">
+      <i class="bi bi-arrow-left"></i> 回列表
     </a>
     {% if session.get('role') == 'admin' %}
-      <a class="btn btn-outline-secondary btn-sm btn-icon" href="{{ url_for('admin_review_edit', rid=review.id) }}">
+      <a class="rb-btn-ghost" href="{{ url_for('admin_review_edit', rid=review.id) }}">
         <i class="bi bi-pencil-square"></i> 後台編輯
       </a>
     {% endif %}
   </div>
 
-  <!-- Hero / 封面 -->
   {% if review.cover_path %}
     <div class="hero mb-4 position-relative">
       <img src="{{ url_for('serve_upload', relpath=review.cover_path) }}" alt="{{ review.title }}"
            style="width:100%;height:360px;object-fit:cover;border-radius:14px;">
-      <div class="position-absolute bottom-0 start-0 end-0 p-3" style="background:linear-gradient(180deg,transparent,rgba(0,0,0,.55)); border-bottom-left-radius:14px;border-bottom-right-radius:14px;">
+      <div class="position-absolute bottom-0 start-0 end-0 p-3"
+           style="background:linear-gradient(180deg,transparent,rgba(0,0,0,.55));
+                  border-bottom-left-radius:14px;border-bottom-right-radius:14px;">
         <h1 class="mb-1 text-white">{{ review.title }}</h1>
-        <div class="d-flex gap-2 mt-2">
-          {% if review.category_name %}
-            <span class="badge-soft">#{{ review.category_name }}</span>
-          {% endif %}
-          {% if review.event_date %}
-            <span class="badge-soft"><i class="bi bi-calendar-event"></i> {{ review.event_date }}</span>
-          {% endif %}
+        <div class="d-flex gap-2 mt-2 flex-wrap">
+          {% if review.category_name %}<span class="badge-soft">#{{ review.category_name }}</span>{% endif %}
+          {% if review.event_date %}<span class="badge-soft"><i class="bi bi-calendar-event"></i> {{ review.event_date }}</span>{% endif %}
           {% if review.status %}
             {% if review.status == 'published' %}
               <span class="badge bg-success-subtle text-success-emphasis rounded-pill px-3 py-2">published</span>
@@ -44,74 +108,103 @@
     <div class="form-card mb-4">
       <h2 class="mb-2">{{ review.title }}</h2>
       <div class="d-flex flex-wrap gap-2">
-        {% if review.category_name %}
-          <span class="badge-soft">#{{ review.category_name }}</span>
-        {% endif %}
-        {% if review.event_date %}
-          <span class="badge-soft"><i class="bi bi-calendar-event"></i> {{ review.event_date }}</span>
-        {% endif %}
-        {% if review.status %}
-          {% if review.status == 'published' %}
-            <span class="badge bg-success-subtle text-success-emphasis rounded-pill px-3 py-2">published</span>
-          {% else %}
-            <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-3 py-2">draft</span>
-          {% endif %}
-        {% endif %}
+        {% if review.category_name %}<span class="badge-soft">#{{ review.category_name }}</span>{% endif %}
+        {% if review.event_date %}<span class="badge-soft"><i class="bi bi-calendar-event"></i> {{ review.event_date }}</span>{% endif %}
       </div>
     </div>
   {% endif %}
 
-  <!-- 內文標題（可留可刪） -->
   <h3 class="fw-bold mb-2">{{ review.title or '未命名回顧' }}</h3>
   <div class="text-muted small mb-3">
     {{ (review.event_date or review.created_at)|strftime("%Y-%m-%d") }} ・ {{ review.category_name }}
   </div>
 
-  <!-- 圖庫（單一版本；支援 srcset 480/960、lazy、Lightbox） -->
   {% if media_list %}
     <style>
-      .gallery-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
-      .thumb-card{background:#fff;border:1px solid #eee;border-radius:12px;padding:10px;height:100%;transition:.15s ease;box-shadow:0 6px 16px rgba(0,0,0,.04)}
-      .thumb-card:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(0,0,0,.06)}
-      .thumb-img,.thumb-video{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;display:block}
-      .thumb-name{margin-top:8px;font-size:.88rem;color:#3b4455;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.6em;text-align:center;word-break:break-all}
+      #reviewDetailPage .gallery-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+      #reviewDetailPage .thumb-card{
+        background:#fff;border:1px solid #eee;border-radius:14px;padding:10px;height:100%;
+        transition:.15s ease;box-shadow:0 8px 20px rgba(0,0,0,.05)
+      }
+      #reviewDetailPage .thumb-card:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(0,0,0,.07)}
+      #reviewDetailPage .thumb-img,#reviewDetailPage .thumb-video{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;display:block}
+
+      /* ✅ 縮圖改 button，避免 href="#" 造成跳動 */
+      #reviewDetailPage button.thumb-link{
+        width:100%;
+        display:block;
+        padding:0 !important;
+        border:0 !important;
+        background:transparent !important;
+        border-radius:10px !important;
+        cursor:pointer;
+      }
+      #reviewDetailPage button.thumb-link:focus-visible{
+        outline:none;
+        box-shadow: 0 0 0 3px rgba(131,93,255,.35);
+      }
+
+      /* 非圖片檔的「開啟」按鈕（原本 btn-outline-primary 會變藍） */
+      #reviewDetailPage .file-open-btn{
+        width:100%;
+        margin-top:.5rem;
+        border:1px solid rgba(131,93,255,.28);
+        background: rgba(131,93,255,.08);
+        color:#3f2f98;
+        border-radius: 12px;
+        font-weight: 900;
+        padding: .45rem .8rem;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        gap:.45rem;
+        transition: transform .15s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease;
+        text-decoration:none;
+      }
+      #reviewDetailPage .file-open-btn:hover{
+        background: rgba(131,93,255,.14);
+        border-color: rgba(131,93,255,.38);
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px rgba(83,70,186,.12);
+        color:#35268a;
+      }
+      #reviewDetailPage .file-open-btn:active{ transform: translateY(0) scale(.98); }
     </style>
 
     <div class="gallery-grid">
       {% for m in media_list %}
       <div class="thumb-card">
+
         {% if m.mime and m.mime.startswith('image/') %}
+          <button type="button"
+                  class="thumb-link js-lb"
+                  data-index="{{ loop.index0 }}"
+                  data-src="{{ url_for('serve_upload', relpath=m.file_path) }}"
+                  aria-label="檢視圖片">
+            <img class="thumb-img" loading="lazy" decoding="async"
+                 src="{{ url_for('serve_upload', relpath=m.file_path) }}"
+                 alt="{{ review.title ~ ' 圖片' }}">
+          </button>
+
+        {% elif m.mime and m.mime.startswith('video/') %}
           <a class="text-decoration-none"
              href="{{ url_for('serve_upload', relpath=m.file_path) }}"
-             data-index="{{ loop.index0 }}"
-             data-src="{{ url_for('serve_upload', relpath=m.file_path) }}"
-             data-name="{{ m.file_name }}"
-             onclick="openLightbox(event)">
-            <img class="thumb-img" loading="lazy"
-                 src="{{ url_for('serve_upload', relpath=m.file_path_480 or m.file_path) }}"
-                 srcset="
-                   {% if m.file_path_480 %}{{ url_for('serve_upload', relpath=m.file_path_480) }} 480w,{% endif %}
-                   {% if m.file_path_960 %}{{ url_for('serve_upload', relpath=m.file_path_960) }} 960w,{% endif %}
-                   {{ url_for('serve_upload', relpath=m.file_path) }} 1600w"
-                 sizes="(max-width: 576px) 50vw, (max-width: 992px) 33vw, 20vw"
-                 alt="{{ m.file_name or (review.title ~ ' 圖片') }}">
-            <div class="thumb-name">{{ m.file_name or '未命名' }}</div>
-          </a>
-        {% elif m.mime and m.mime.startswith('video/') %}
-          <a class="text-decoration-none" href="{{ url_for('serve_upload', relpath=m.file_path) }}" target="_blank">
+             target="_blank" rel="noopener">
             <video class="thumb-video" muted preload="metadata">
               <source src="{{ url_for('serve_upload', relpath=m.file_path) }}" type="{{ m.mime }}">
             </video>
-            <div class="thumb-name">{{ m.file_name or '未命名' }}</div>
           </a>
+
         {% else %}
           <div class="text-center">
             <div class="d-flex align-items-center justify-content-center" style="height: calc((160px*3)/4);">
               <i class="bi bi-file-earmark-text" style="font-size:2rem;"></i>
             </div>
-            <div class="thumb-name">{{ m.file_name or '未命名' }}</div>
-            <a class="btn btn-sm btn-outline-primary w-100"
-               href="{{ url_for('serve_upload', relpath=m.file_path) }}" target="_blank">開啟</a>
+            <a class="file-open-btn"
+               href="{{ url_for('serve_upload', relpath=m.file_path) }}"
+               target="_blank" rel="noopener">
+              <i class="bi bi-box-arrow-up-right"></i> 開啟
+            </a>
           </div>
         {% endif %}
 
@@ -119,9 +212,10 @@
         <form method="POST"
               action="{{ url_for('admin_delete_review_media', rid=review.id, mid=m.id) }}"
               onsubmit="return confirm('確定刪除？')">
-          <button class="btn btn-sm btn-outline-danger w-100 mt-1" type="submit">刪除</button>
+          <button class="btn btn-sm btn-outline-danger w-100 mt-2" type="submit">刪除</button>
         </form>
         {% endif %}
+
       </div>
       {% endfor %}
     </div>
@@ -129,37 +223,190 @@
     <div class="text-center text-muted py-5">尚未上傳任何媒體。</div>
   {% endif %}
 
-  <!-- 底部操作 -->
   <div class="d-flex align-items-center justify-content-between mt-4">
-    <a class="btn btn-outline-secondary btn-sm btn-icon" href="{{ url_for('reviews') }}">
-        <i class="bi bi-arrow-left"></i> 回列表
+    <a class="rb-btn-ghost" href="{{ url_for('reviews') }}">
+      <i class="bi bi-arrow-left"></i> 回列表
     </a>
-    <div class="d-flex gap-2">
-      <a class="btn btn-outline-secondary btn-sm btn-icon" href="javascript:window.scrollTo({top:0,behavior:'smooth'})">
-        <i class="bi bi-arrow-up-short"></i> 回到頂部
-      </a>
-      {% if session.get('role') == 'admin' %}
-      <a class="btn btn-outline-secondary btn-sm btn-icon" href="{{ url_for('admin_review_edit', rid=review.id) }}">
-        <i class="bi bi-pencil-square"></i> 後台編輯
-      </a>
-      {% endif %}
-    </div>
+    <a class="rb-btn" href="javascript:window.scrollTo({top:0,behavior:'smooth'})">
+      <i class="bi bi-arrow-up-short"></i> 回到頂部
+    </a>
   </div>
 </div>
 
-<!-- Lightbox（Bootstrap Modal） -->
+{# =========================
+   ✅ Lightbox（好看＋不藍＋不需要狂點）
+   - 不循環
+   - 到第一張：左箭頭消失
+   - 到最後張：右箭頭消失
+   ========================= #}
+
+<style>
+  #lightboxModal .modal-dialog{ margin:0; max-width:none; }
+  #lightboxModal .modal-content{
+    background: rgba(0,0,0,.92);
+    border: 0;
+    border-radius: 0;
+    height: 100vh;
+  }
+  #lightboxModal .modal-body{
+    position: relative;
+    height: 100vh;
+    padding: 0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+  }
+
+  #lbImg{
+    max-width: min(96vw, 1400px);
+    max-height: 88vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display:block;
+    user-select: none;
+    -webkit-user-drag: none;
+    border-radius: 14px;
+    box-shadow: 0 22px 70px rgba(0,0,0,.55);
+  }
+
+  /* 工具列 */
+  .lb-topbar{
+    position:absolute;
+    top: 14px;
+    left: 14px;
+    right: 14px;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    pointer-events:none;
+    z-index: 50;
+  }
+
+  /* ✅ 重要：lightbox 的按鈕全部用 .btn，避開你全站 button:not(.btn) 的藍色規則 */
+  #lightboxModal .btn.lb-btn,
+  #lightboxModal .btn.lb-nav{
+    pointer-events:auto;
+    border: 1px solid rgba(131,93,255,.24) !important;
+    background: rgba(131,93,255,.18) !important;
+    color:#fff !important;
+    border-radius: 999px !important;
+    box-shadow: 0 12px 30px rgba(0,0,0,.28) !important;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: transform .15s ease, background .15s ease, border-color .15s ease, opacity .15s ease;
+  }
+  #lightboxModal .btn.lb-btn:hover,
+  #lightboxModal .btn.lb-nav:hover{
+    background: rgba(131,93,255,.28) !important;
+    border-color: rgba(131,93,255,.38) !important;
+    transform: translateY(-1px);
+    opacity: 1;
+  }
+  #lightboxModal .btn.lb-btn:active,
+  #lightboxModal .btn.lb-nav:active{ transform: translateY(0) scale(.98); }
+
+  /* 關閉按鈕 */
+  #lightboxModal .btn.lb-btn{
+    width: 46px;
+    height: 46px;
+    padding: 0 !important;
+    display:grid;
+    place-items:center;
+  }
+  #lightboxModal .btn.lb-btn .bi{ font-size: 1.15rem; }
+
+  /* 左右箭頭：更好看、更不遮照片 */
+  #lightboxModal .btn.lb-nav{
+    position:absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 60; /* ✅ 比圖片高，避免被蓋住 */
+    width: 54px;
+    height: 54px;
+    padding: 0 !important;
+    display:grid;
+    place-items:center;
+    opacity: .92;
+  }
+  #lightboxModal .lb-prev{ left: 16px; }
+  #lightboxModal .lb-next{ right: 16px; }
+  #lightboxModal .btn.lb-nav .bi{ font-size: 1.8rem; }
+
+  /* 底部提示 */
+  .lb-bottombar{
+    position:absolute;
+    bottom: 14px;
+    left: 14px;
+    right: 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    z-index: 50;
+    pointer-events:none;
+  }
+  .lb-hint{
+    pointer-events:none;
+    color: rgba(255,255,255,.80);
+    font-size: .85rem;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.10);
+    border: 1px solid rgba(255,255,255,.10);
+    backdrop-filter: blur(10px);
+  }
+  #lbOpen{
+    pointer-events:auto;
+    text-decoration:none;
+    padding: 0 14px !important;
+    height: 46px;
+    display:inline-flex !important;
+    align-items:center;
+    gap: 8px;
+  }
+
+  @media (max-width: 576px){
+    #lbImg{ max-height: 86vh; border-radius: 12px; }
+    #lightboxModal .btn.lb-nav{ width: 48px; height: 48px; }
+    #lightboxModal .lb-prev{ left: 10px; }
+    #lightboxModal .lb-next{ right: 10px; }
+    .lb-topbar{ top: 10px; left: 10px; right: 10px; }
+    .lb-bottombar{ bottom: 10px; left: 10px; right: 10px; }
+  }
+
+  #lightboxModal{ z-index: 2000; }
+  .modal-backdrop{ z-index: 1990; }
+</style>
+
 <div class="modal fade" id="lightboxModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-centered">
-    <div class="modal-content" style="background:#0b0b0c;">
-      <div class="modal-body p-0 position-relative">
-        <img id="lbImg" alt="" style="width:100%;height:auto;display:block;max-height:85vh;object-fit:contain;">
-        <button type="button" class="btn btn-light position-absolute top-0 end-0 m-2" data-bs-dismiss="modal" aria-label="Close">✕</button>
-        <button type="button" class="btn btn-dark position-absolute top-50 start-0 translate-middle-y ms-2" onclick="navLightbox(-1)" aria-label="上一張">‹</button>
-        <button type="button" class="btn btn-dark position-absolute top-50 end-0 translate-middle-y me-2" onclick="navLightbox(1)" aria-label="下一張">›</button>
-      </div>
-      <div class="modal-footer justify-content-between text-white border-0">
-        <div id="lbName" class="small text-truncate"></div>
-        <a id="lbOpen" class="btn btn-outline-light btn-sm" href="#" target="_blank" rel="noopener">在新分頁開啟</a>
+  <div class="modal-dialog modal-fullscreen">
+    <div class="modal-content">
+      <div class="modal-body">
+
+        <div class="lb-topbar">
+          <button type="button" class="btn lb-btn" data-bs-dismiss="modal" aria-label="Close" title="關閉">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <img id="lbImg" alt="">
+
+        <button type="button" class="btn lb-nav lb-prev" aria-label="上一張" title="上一張">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <button type="button" class="btn lb-nav lb-next" aria-label="下一張" title="下一張">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+
+        <div class="lb-bottombar">
+          <div class="lb-hint">← → 切換　ESC 關閉</div>
+          <a id="lbOpen" class="btn lb-btn" href="#" target="_blank" rel="noopener" title="在新分頁開啟">
+            <i class="bi bi-box-arrow-up-right"></i><span class="d-none d-sm-inline">新分頁</span>
+          </a>
+        </div>
+
       </div>
     </div>
   </div>
@@ -167,32 +414,84 @@
 
 <script>
   let lbIndex = 0;
-  function openLightbox(e){
-    e.preventDefault();
-    const a = e.currentTarget;
-    lbIndex = parseInt(a.dataset.index || 0, 10);
-    setLightbox(a.dataset.src, a.dataset.name);
-    new bootstrap.Modal('#lightboxModal').show();
+
+  function getThumbs(){
+    return Array.from(document.querySelectorAll('#reviewDetailPage .js-lb[data-src]'));
   }
-  function setLightbox(src, name){
-    const img = document.getElementById('lbImg');
-    const nm  = document.getElementById('lbName');
-    const open= document.getElementById('lbOpen');
-    img.src = src; nm.textContent = name || '';
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const modalEl = document.getElementById('lightboxModal');
+    if(modalEl && modalEl.parentElement !== document.body){
+      document.body.appendChild(modalEl);
+    }
+
+    // ✅ 用 JS 綁定，避免 inline onclick 偶發沒吃到 / 也不會跳頁
+    document.querySelectorAll('#reviewDetailPage .js-lb[data-src]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        lbIndex = parseInt(btn.dataset.index || 0, 10);
+        setLightbox(btn.dataset.src);
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('lightboxModal')).show();
+      }, {passive:true});
+    });
+
+    // ✅ 左右箭頭點擊（更穩定）
+    document.querySelector('#lightboxModal .lb-prev')?.addEventListener('click', ()=>navLightbox(-1));
+    document.querySelector('#lightboxModal .lb-next')?.addEventListener('click', ()=>navLightbox(1));
+  });
+
+  function setLightbox(src){
+    const img  = document.getElementById('lbImg');
+    const open = document.getElementById('lbOpen');
+    img.src = src;
     open.href = src;
+    updateNavUI();
   }
+
+  function updateNavUI(){
+    const thumbs = getThumbs();
+    const prevBtn = document.querySelector('#lightboxModal .lb-prev');
+    const nextBtn = document.querySelector('#lightboxModal .lb-next');
+    if(!prevBtn || !nextBtn) return;
+
+    if(thumbs.length <= 1){
+      prevBtn.style.display = 'none';
+      nextBtn.style.display = 'none';
+      return;
+    }
+
+    prevBtn.style.display = (lbIndex <= 0) ? 'none' : '';
+    nextBtn.style.display = (lbIndex >= thumbs.length - 1) ? 'none' : '';
+  }
+
   function navLightbox(step){
-    const thumbs = Array.from(document.querySelectorAll('.thumb-card a[data-src]'));
+    const thumbs = getThumbs();
     if(!thumbs.length) return;
-    lbIndex = (lbIndex + step + thumbs.length) % thumbs.length;
-    const a = thumbs[lbIndex];
-    setLightbox(a.dataset.src, a.dataset.name);
+
+    lbIndex = lbIndex + step;
+    if(lbIndex < 0) lbIndex = 0;
+    if(lbIndex > thumbs.length - 1) lbIndex = thumbs.length - 1;
+
+    setLightbox(thumbs[lbIndex].dataset.src);
   }
+
+  // 鍵盤左右切換
   document.addEventListener('keydown', (ev)=>{
     const modal = document.getElementById('lightboxModal');
     if(!modal.classList.contains('show')) return;
-    if(ev.key === 'ArrowLeft') navLightbox(-1);
+    if(ev.key === 'ArrowLeft')  navLightbox(-1);
     if(ev.key === 'ArrowRight') navLightbox(1);
   });
+
+  // 關閉時清掉 src
+  document.getElementById('lightboxModal')?.addEventListener('hidden.bs.modal', ()=>{
+    const img = document.getElementById('lbImg');
+    if(img) img.src = '';
+  });
+
+  // 顯示後刷新一次（避免第一張仍顯示左箭頭）
+  document.getElementById('lightboxModal')?.addEventListener('shown.bs.modal', ()=>{
+    updateNavUI();
+  });
 </script>
+
 {% endblock %}

@@ -57,6 +57,9 @@
     color:#7b85a0; font-weight:700;
   }
 
+  /* ✅ 封面載不到：套用 placeholder 時把漸層拿掉 */
+  .cover-wrap.is-placeholder .cover-grad{ display:none; }
+
   .review-meta{ color:#7b85a0; font-size:.9rem; }
   .review-title{
     font-weight:800; line-height:1.35; margin-bottom:.35rem;
@@ -87,7 +90,7 @@
   .post-body img { max-height: 70vh; object-fit: contain; }
 </style>
 
-<div class="container" style="margin-top:90px">
+<div class="container">
   <h2 class="mb-1 reviews-hero-title">課程回顧</h2>
   <p class="text-muted mb-4">過往活動精彩瞬間與重點整理</p>
 
@@ -117,6 +120,11 @@
         <!-- 封面 -->
         <div class="cover-wrap">
           {% if x.cover_path %}
+            <!-- ✅ 先放一個隱藏 placeholder，圖片 404 時顯示它 -->
+            <div class="placeholder placeholder-fallback d-none">
+              <i class="bi bi-image me-2"></i> 無封面
+            </div>
+
             <img
               class="cover-img" loading="lazy" decoding="async"
               src="{{ url_for('serve_upload', relpath=x.cover_path) }}"
@@ -127,7 +135,15 @@
                 {{ url_for('serve_upload', relpath=x.cover_path) }} 1600w"
               sizes="(max-width: 576px) 90vw, (max-width: 992px) 44vw, 320px"
               {% endif %}
-              alt="{{ x.title or '封面' }}">
+              alt="{{ x.title or '封面' }}"
+              onerror="
+                this.onerror=null;
+                const wrap=this.closest('.cover-wrap');
+                wrap.classList.add('is-placeholder');
+                const ph=wrap.querySelector('.placeholder-fallback');
+                if(ph) ph.classList.remove('d-none');
+                this.remove();
+              ">
             <div class="cover-grad"></div>
           {% else %}
             <div class="placeholder">
